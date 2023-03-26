@@ -17,6 +17,24 @@ typedef struct s_kv
 	char *value;
 }	t_kv;
 
+
+typedef struct s_nodo
+{
+	char cadena[1000];
+	struct s_nodo *izquierda;
+	struct s_odo *derecha;
+} 				t_nodo;
+
+
+// Esta estructura se usara para guardar la informacion pasada por el terminal.
+typedef struct s_input_inf
+{
+	char *line;
+	int num_comandos;
+	//Struct s_nodo?
+}				t_input_inf;
+
+
 //lst functions
 t_kv	*set_key_value(char *key, char *value);
 void	delete_node(t_list **lst, t_list	*node);

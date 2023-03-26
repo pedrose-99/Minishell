@@ -1,6 +1,18 @@
 #include "../includes/minishell.h"
 #include "../libft/libft.h"
+/*
+void	handle_ctr_c(t_input_inf *info)
+{
+	free(info->line);
+	info->line = ft_strdup("");
+	info->num_comandos = 0;
+	ft_putstr_fd("\n", STDIN); (o STDIN_FILENO)
+	llamar a funcion que te escriba minisell> 
+		line = readline("minishell> ");
+		add_history(line);
+}
 
+*/
 void	signal_handler(int signal)
 {
 	int	pid;
