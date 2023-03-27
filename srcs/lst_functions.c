@@ -6,7 +6,7 @@
 /*   By: pfuentes <pfuentes@student.42madrid.com    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/07/09 13:03:09 by pfuentes          #+#    #+#             */
-/*   Updated: 2023/03/25 11:00:23 by pfuentes         ###   ########.fr       */
+/*   Updated: 2023/03/27 13:04:44 by pfuentes         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,6 +71,7 @@ void	print_str_lst(t_list *str_list)
 	while (curr)
 	{
 		content = (char *)curr->content;
+		printf("%s\n", content);
 		curr = curr->next;
 	}
 }
