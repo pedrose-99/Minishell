@@ -7,11 +7,35 @@ typedef struct s_nodo
 	struct s_nodo *derecha;
 } 				t_nodo;
 
+int ft_strcmp(char *s1, char *s2)
+{
+	int i;
+
+	i = 0;
+	while((s1[i] == s2[i]) && (s1[i] && s2[i]))
+		i++;
+	return((unsigned char)s1[i] - (unsigned char)s2[i]);
+}
+
+char *ft_strcpy(char *s1, char *s2)
+{
+	int i;
+
+	i = 0;
+	while (s2[i])
+	{
+		s1[i] = s2[i];
+		i++;
+	}
+	s1[i] = '\0';
+	return (s1);
+}
+
 // Esta funcion genera un nuevo nodo
 t_nodo *nuevo_nodo(char cadena[1000])
 {
 	t_nodo *nodo = (t_nodo*)malloc(sizeof(t_nodo));
-	strcpy(nodo->cadena, cadena);
+	ft_strcpy(nodo->cadena, cadena);
 	nodo->izquierda = NULL;
 	nodo->derecha = NULL;
 	return (nodo);
@@ -20,7 +44,7 @@ t_nodo *nuevo_nodo(char cadena[1000])
 // Esta funcion agrega una cadena ya sea al nodo derecho o al izquierdo 
 void agregar(t_nodo *nodo, char *cadena)
 {
-	if (strcmp(cadena, nodo->cadena) > 0)
+	if (ft_strcmp(cadena, nodo->cadena) > 0)
 	{
 		if (nodo->derecha == NULL)
 			nodo->derecha = nuevo_nodo(cadena);
@@ -41,9 +65,9 @@ t_nodo *buscar(t_nodo *nodo, char *cadena)
 {
 	if (nodo == NULL)
 		return (NULL);
-	if ((strcmp(cadena, nodo->cadena) == 0))
+	if ((ft_strcmp(cadena, nodo->cadena) == 0))
 		return (nodo);
-	else if (strcmp(cadena, nodo->cadena) > 0)
+	else if (ft_strcmp(cadena, nodo->cadena) > 0)
 		return (buscar(nodo->derecha, cadena));
 	else
 		return (buscar(nodo->izquierda, cadena));
