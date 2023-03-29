@@ -45,13 +45,15 @@ int		condition_space(t_parser *parser, int ancla, int i, char **array_aux, int n
 int condition_comillas(t_parser *parser, int i, char **array_aux, int num_palabras, char c)
 {
 	int ancla;
+	int aux;
 	
 	ancla = i;
+	i++;
 	while(parser->line[i] != c)
 	{
 		i++;
 	}
-	while(parser->line[i] != ' ' || parser->line[i] != '\t')
+	while(parser->line[i] != ' ' && parser->line[i] != '\t')
 		i++;
 	copiar_en_array(parser, array_aux, num_palabras, i, ancla);
 	return (i);
@@ -83,6 +85,7 @@ int		contar_palabras(t_parser *parser)
 			num_palabras++;
 			ancla = condition_comillas(parser, i, array_aux, num_palabras, '"');
 			i = ancla;
+			printf("%c'\n'", parser->line[i]);
 		}
 		else if(parser->line[i] == 39)
 		{
@@ -118,7 +121,6 @@ int main(int argc, char **argv)
 	
 	i = 0;
 	len = 0;
-	char line2 = "hola 'me ||llamo' <pedro ";
 	parser = (t_parser*)malloc(sizeof(t_parser));
 	init_parser(parser);
 	line = (char*)malloc(sizeof(char*));
