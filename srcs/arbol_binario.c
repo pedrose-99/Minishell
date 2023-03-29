@@ -2,10 +2,10 @@
 
 typedef struct s_nodo
 {
-	char cadena[1000];
-	struct s_nodo *izquierda;
-	struct s_nodo *derecha;
-} 				t_nodo;
+	char			*cadena;
+	struct s_nodo 	*izquierda;
+	struct s_nodo 	*derecha;
+}	t_nodo;
 
 int ft_strcmp(char *s1, char *s2)
 {
@@ -42,24 +42,21 @@ t_nodo *nuevo_nodo(char cadena[1000])
 }
 
 // Esta funcion agrega una cadena ya sea al nodo derecho o al izquierdo 
-void agregar(t_nodo *nodo, char *cadena)
+void	add_left_node(t_nodo **nodo, char *cadena)
 {
-	if (ft_strcmp(cadena, nodo->cadena) > 0)
-	{
-		if (nodo->derecha == NULL)
-			nodo->derecha = nuevo_nodo(cadena);
-		else
-			agregar(nodo->derecha, cadena);
-	}
-	else
-	{
-		if (nodo->izquierda == NULL)
-			nodo->izquierda = nuevo_nodo(cadena);
-		else
-			agregar(nodo->izquierda, cadena);
-	}
+	t_node	*node;
+
+	node = *nodo;
+	node->izquierda = nuevo_nodo(cadena);
 }
 
+void	add_right_node(t_nodo **nodo, char *cadena)
+{
+	t_node	*node;
+
+	node = *nodo;
+	node->derecha = nuevo_nodo(cadena);
+}
 // Esta funcion busca una cadena en el arbol binario
 t_nodo *buscar(t_nodo *nodo, char *cadena)
 {
@@ -67,10 +64,8 @@ t_nodo *buscar(t_nodo *nodo, char *cadena)
 		return (NULL);
 	if ((ft_strcmp(cadena, nodo->cadena) == 0))
 		return (nodo);
-	else if (ft_strcmp(cadena, nodo->cadena) > 0)
-		return (buscar(nodo->derecha, cadena));
-	else
-		return (buscar(nodo->izquierda, cadena));
+	buscar(nodo->izquierda, cadena);
+	buscar(nodo->derecha, cadena);
 }
 
 // Esta funcion primero pinta el nodo actual luego el izquierdo y luego el derecho
@@ -92,12 +87,12 @@ int main()
 	if(raiz == NULL)
 		raiz = nuevo_nodo("Nombre:");
 	agregar(raiz, "Hola");
-    agregar(raiz, "ME");
-    agregar(raiz, "LLamo");
-    agregar(raiz, "Pedro");
-    agregar(raiz, "Como");
-    agregar(raiz, "Te");
-    agregar(raiz, "LLamas");
+	agregar(raiz, "ME");
+	agregar(raiz, "LLamo");
+	agregar(raiz, "Pedro");
+	agregar(raiz, "Como");
+	agregar(raiz, "Te");
+	agregar(raiz, "LLamas");
     agregar(raiz, "tu?");
     printf("\nPintar el arbol: \n");
 	print_arbol(raiz);
@@ -105,24 +100,15 @@ int main()
 	char busqueda[1000] = "Patata";
     t_nodo*apuntador = buscar(raiz, busqueda);
     if (apuntador == NULL)
-    {
         printf("%s no existe en el árbol\n", busqueda);
-    }
     else
-    {
         printf("%s sí existe en el árbol\n", busqueda);
-    }
     // Otra búsqueda con algo que sabemos que sí existe
     char otra_busqueda[1000] = "Pedro";
     apuntador = buscar(raiz, otra_busqueda);
     if (apuntador != NULL)
-    {
         printf("%s sí existe en el árbol\n", otra_busqueda);
-    }
     else
-    {
         printf("%s sí existe en el árbol\n", otra_busqueda);
-    }
-    return 0;
 	return (0);
 }

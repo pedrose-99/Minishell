@@ -1,5 +1,6 @@
 # include <readline/readline.h>
 # include <readline/history.h>
+# include <string.h>
 # include <signal.h>
 # include <stdio.h>
 # include <sys/fcntl.h>
@@ -20,9 +21,9 @@ typedef struct s_kv
 
 typedef struct s_nodo
 {
-	char cadena[1000];
-	struct s_nodo *izquierda;
-	struct s_odo *derecha;
+	char 			*cadena;
+	struct s_nodo 	*izquierda;
+	struct s_odo 	*derecha;
 } 				t_nodo;
 
 
@@ -38,6 +39,9 @@ typedef struct s_input_inf
 //lst functions
 t_kv	*set_key_value(char *key, char *value);
 void	delete_node(t_list **lst, t_list	*node);
+void	delete_node_str(t_list **lst, t_list *node);
+void	remove_head(t_list **lst);
+t_list	*find_node(t_list *lst, char *str);
 t_list	*move_to_node(t_list	*lst, int pos);
 
 //env lst functions
@@ -60,3 +64,12 @@ void	unset(t_list	*tokens, t_list	**env);
 void	b_exit(void);
 
 void	wildcards(char *cmp);
+
+//binary tree
+int 	ft_strcmp(char *s1, char *s2);
+char 	*ft_strcpy(char *s1, char *s2);
+t_nodo 	*nuevo_nodo(char cadena[1000]);
+void	add_left_node(t_nodo **nodo, char *cadena);
+void	add_right_node(t_nodo **nodo, char *cadena);
+t_nodo 	*buscar(t_nodo *nodo, char *cadena);
+void	print_arbol(t_nodo *nodo);
