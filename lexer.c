@@ -59,6 +59,87 @@ int condition_comillas(t_parser *parser, int i, char **array_aux, int num_palabr
 	return (i);
 
 }
+
+//me lo guardara sin los parentesis
+int condition_parentesis(t_parser *parser, int i, char **array_aux, int num_palabras)
+{
+	int aux_parent;
+	int ancla;
+
+	aux_parent = 0;
+	ancla = i;
+	while(parser->line[i] != ')' || aux_parent != 0)
+	{
+		if (parser->line[i] == '(')
+		{
+			aux_parent++;
+		}
+		if (parser->line[i] == ')' && aux_parent > 0)
+		{
+			aux_parent--;
+		}
+		i++;
+	}
+	i--;
+	copiar_en_array(parser, array_aux, num_palabras, i, ancla);
+	i = i++;
+	return (i);
+}
+
+
+int		separar_codigo(t_parser *parser)
+{
+	int i;
+	int ancla;
+	char **array_aux;
+	int num_palabras;
+
+	i = 0;
+	num_palabras = 0;
+	array_aux =(char **)malloc(sizeof(char**));
+	while(parser->line[i] == ' ' || parser->line[i] == '\t')
+		i++;
+	while(parser->line[i])
+	{
+		if (parser->line[i] == '(')
+		{
+			if(parser->line[ft_strlen(parser->line[i])] == ')')
+				i++;
+			else
+			{
+				i++;
+				num_palabras++;
+				ancla = condition_parentesis(parser, i, array_aux, num_palabras);
+				i = ancla;
+			}
+		else if (parser->line[i] == ')')
+			i++;
+		else if (parser->line[i] == ' ' || parser->line[i] == '\t')
+			i++;
+		else if (parser->line[i] == '|' || parser->line[i] == '>' || parser->line[i] == '<' || parser->line[i] == '&') //añadir ||   y &&
+		{
+			num_palabras++;
+			if (parser->line[i + 1] == '|')
+			{
+				array_aux[num_palabras -1] =(char *)malloc(sizeof(char*));
+				array_aux[num_palabras - 1][0] = parser->line[i];
+				array_aux[num_palabras - 1][0] = parser->line[i];
+			}
+			else
+			{
+				array_aux[num_palabras -1] =(char *)malloc(sizeof(char*));
+				ancla++;
+				array_aux[num_palabras - 1][0] = parser->line[i];
+			}
+		}
+		i++;
+	}
+	ancla = i;
+	while(parser->line[i])
+	{
+}
+
+
 // Esta funcion contara el numero de palabras que hay para separar
 int		contar_palabras(t_parser *parser)
 {
@@ -85,7 +166,6 @@ int		contar_palabras(t_parser *parser)
 			num_palabras++;
 			ancla = condition_comillas(parser, i, array_aux, num_palabras, '"');
 			i = ancla;
-			printf("%c'\n'", parser->line[i]);
 		}
 		else if(parser->line[i] == 39)
 		{
@@ -93,9 +173,15 @@ int		contar_palabras(t_parser *parser)
 			ancla = condition_comillas(parser, i, array_aux, num_palabras, 39);
 			i = ancla;
 		}
-		else if (parser->line[i] == '|' || parser->line[i] == '>' || parser->line[i] == '<')
+		else if (parser->line[i] == '|' || parser->line[i] == '>' || parser->line[i] == '<' || parser->line[i] == '&') //añadir ||   y &&
 		{
 			num_palabras++;
+			if (parser->line[i + 1] == '|')
+			{
+				array_aux[num_palabras -1] =(char *)malloc(sizeof(char*));
+				array_aux[num_palabras - 1][0] = parser->line[i];
+				array_aux[num_palabras - 1][0] = parser->line[i];
+			}
 			array_aux[num_palabras -1] =(char *)malloc(sizeof(char*));
 			ancla++;
 			array_aux[num_palabras - 1][0] = parser->line[i];
@@ -104,6 +190,12 @@ int		contar_palabras(t_parser *parser)
 		{
 			num_palabras++;
 			//Hacer funcion pa hacer el $loquesea
+		}
+		else if(parser->line[i] == '(')
+		{
+			num_palabras++;
+			ancla = condition_parentesis(parser, i, array_aux, num_palabras);
+			i = ancla;
 		}
 		i++;
 	}
