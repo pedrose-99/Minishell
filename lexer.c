@@ -14,58 +14,7 @@ void	init_parser(t_parser *parser)
 	parser->line = "";
 }
 
-// Esta funcion me guarda la palabra en un array temporal y me devuelve el nuevo ancla
-/*
-int		condition_space(t_parser *parser, int ancla, int i, char **array_aux, int num_palabras)
-{
-	copiar_en_array(parser, array_aux, num_palabras, i, ancla);
-	while(parser->line[i] == ' ' || parser->line[i] == '\t')
-		i++;
-	return i;
-}
-
-// Esta funcion te guarda todo lo que hay entre las
-int condition_comillas(t_parser *parser, int i, char **array_aux, int num_palabras, char c)
-{
-	int ancla;
-	int aux;
-	
-	ancla = i;
-	i++;
-	while(parser->line[i] != c)
-	{
-		i++;
-	}
-	while(parser->line[i] != ' ' && parser->line[i] != '\t')
-		i++;
-	copiar_en_array(parser, array_aux, num_palabras, i, ancla);
-	return (i);
-
-}
-*/
-/*
-char**	copiar_en_array(t_parser *parser, char **array_aux, int num_palabras, int i, int ancla)
-{
-	int aux;
-
-	aux = 0;
-	aux = i - ancla;
-	printf("Numero de letras del array: %d\n", aux);
-	array_aux[num_palabras -1] =(char *)malloc(sizeof(char)*aux + 1);
-	aux = 0;
-	while(ancla <= i)
-	{
-		array_aux[num_palabras - 1][aux] = parser->line[ancla];
-		aux++;
-		ancla++;
-	}
-	array_aux[num_palabras - 1][aux] = '\0';
-	printf("AQUI HACE LLA COPIA Y La IMPRIMIMOS: %s\n", array_aux[num_palabras - 1]);
-	return (array_aux);
-	//añadir a la lista el array_aux[num_palabras]
-}
-*/
-int condition_parentesis(t_parser *parser, int i)
+int condition_parentesis(char *line, int i)
 {
 	int aux_abierto;
 	int aux_cerrado;
@@ -74,9 +23,9 @@ int condition_parentesis(t_parser *parser, int i)
 	aux_cerrado = 0;
 	while(aux_abierto != aux_cerrado)
 	{
-		if (parser->line[i] == '(')
+		if (line[i] == '(')
 			aux_abierto++;
-		if (parser->line[i] == ')')
+		if (line[i] == ')')
 			aux_cerrado++;
 		i++;
 	}
@@ -90,7 +39,7 @@ int	saltar_espace(char *line, int i)
 		i++;
 	return(i);
 }
-
+ 
 int separar(t_parser *parser)
 {
 	int i;
@@ -121,7 +70,7 @@ int separar(t_parser *parser)
 		{
 			i++;
 			ancla = i;
-			i = condition_parentesis(parser, i);
+			i = condition_parentesis(parser->line, i);
 			ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
 			i++;
 			i = saltar_espace(parser->line, i);
@@ -137,75 +86,103 @@ int separar(t_parser *parser)
 
 	return (0);
 }
-/*
-// Esta funcion contara el numero de palabras que hay para separar
-int		contar_palabras(t_parser *parser)
+
+int		check_parentesis(char *line)
 {
 	int i;
-	int ancla;
-	char **array_aux;
-	int num_palabras;
-
+	int parentesis_abierto;
+	int parentesis_cerrado;
+	
 	i = 0;
-	array_aux =(char **)malloc(sizeof(char**));
-	while(parser->line[i] == ' ' || parser->line[i] == '\t')
-		i++;
-	ancla = i;
-	num_palabras = 1;
-	while(parser->line[i])
+	parentesis_abierto = 0;
+	parentesis_cerrado = 0;
+	while(line[i])
 	{
-		if (parser->line[i] == ' ' || parser->line[i] == '\t')
+		if (line[i] == '"')
 		{
-			num_palabras++;
-			ancla = condition_space(parser, ancla, i, array_aux, num_palabras);
-		}
-		else if(parser->line[i] == '"')
-		{
-			num_palabras++;
-			ancla = condition_comillas(parser, i, array_aux, num_palabras, '"');
-			i = ancla;
-		}
-		else if(parser->line[i] == 39)
-		{
-			num_palabras++;
-			ancla = condition_comillas(parser, i, array_aux, num_palabras, 39);
-			i = ancla;
-		}
-		else if (parser->line[i] == '|' || parser->line[i] == '>' || parser->line[i] == '<' || parser->line[i] == '&') //añadir ||   y &&
-		{
-			num_palabras++;
-			if (parser->line[i + 1] == '|')
-			{
-				array_aux[num_palabras -1] =(char *)malloc(sizeof(char*));
-				array_aux[num_palabras - 1][0] = parser->line[i];
-				i++;
-				array_aux[num_palabras - 1][0] = parser->line[i];
-				ancla++;
-			}
-			array_aux[num_palabras -1] =(char *)malloc(sizeof(char*));
-			array_aux[num_palabras - 1][0] = parser->line[i];
 			i++;
-			while(parser->line[i] == ' ' || parser->line[i] == '\t')
+			while(line[i] != '"')
 				i++;
-			ancla = i;
 		}
-		else if (parser->line[i] == '$')
+		else if (line[i] == 39)
 		{
-			num_palabras++;
-			//Hacer funcion pa hacer el $loquesea
+			i++;
+			while(line[i] != 39)
+				i++;
 		}
-		else if(parser->line[i] == '(')
-		{
-			num_palabras++;
-			ancla = condition_parentesis(parser, i, array_aux, num_palabras);
-			i = ancla;
-		}
+		if (line[i] == '(')
+			parentesis_abierto++;
+		if (line[i] == ')')
+			parentesis_cerrado++;
 		i++;
 	}
-	return(num_palabras);
+	return(parentesis_cerrado - parentesis_abierto);
 }
 
-*/
+int 	check_comillas(char *line)
+{
+	int i;
+	int comillas_simples;
+	int comillas_dobles;
+
+	i = 0;
+	comillas_simples = 0;
+	comillas_dobles = 0;
+	while(line[i])
+	{
+		if (line[i] == '"')
+			comillas_dobles++;
+		if (line[i] == 39)
+			comillas_simples++;
+		i++;
+	}
+	if (comillas_simples % 2 == 1 || comillas_dobles % 2 == 1)
+		return (0);
+	return (1);
+}
+
+int check_caract(char *line)
+{
+	int i;
+
+	i = 0;
+	while (line[i])
+	{
+		if (line[i] == '(')
+			i = condition_parentesis(line, i);
+		else if (line[i] == 39)
+		{
+			i++;
+			while(line[i] != 39)
+				i++;
+		}
+		else if (line[i] == '"')
+		{
+			i++;
+			while(line[i] != '"')
+				i++;
+		}
+		else if (line[i] == ',' || line[i] == ';' || line[i] == 92)
+			return (0);
+		i++;
+	}
+	return (1);
+}
+
+int		check_sintaxis(char *line)
+{
+	int check_paren;
+	int check_other_carac;
+
+	check_other_carac = 0;
+	if (check_comillas (line))
+		check_paren = check_parentesis(line);
+	if (check_paren == 0)
+		check_other_carac = check_caract(line);
+	if (check_other_carac)
+		return (1);
+	return (0);
+}
 
 int main(int argc, char **argv)
 {
