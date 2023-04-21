@@ -17,6 +17,11 @@ typedef struct s_kv
 	char *value;
 }	t_kv;
 
+typedef struct s_key_new
+{
+	char *key;
+	char **value;
+}	t_key_new;
 
 typedef struct s_nodo
 {

@@ -1,16 +1,44 @@
-#include "../includes/minishell.h"
-#include "../libft/libft.h"
+#include "includes/minishell.h"
+#include "libft/libft.h"
 
 //establece valores de nodo de variable de entorno: key-value
 t_kv	*set_key_value(char *key, char *value)
 {
-	t_kv	*key_value;
+	t_key_new	*key_value;
+	int i;
+	int j;
+	int aux;
 
+	i = 0;
+	j = 0;
+	aux = 0;
 	key_value = malloc(sizeof(t_kv));
 	key_value->key = key;
-	key_value->value = value;
+	while (value[i])
+	{
+		aux = 0;
+		while(!es_espacio(value[i]) && value[i])
+		{
+			key_value->value[j][aux] = value[i];
+			i++;
+			aux++;
+		}
+		if (es_espacio(value[i]))
+		{
+			aux = 0;
+			j++;
+			while(es_espacio(value[i]))
+			{
+				key_value->value[j][aux] = value[i];
+				aux++;
+				i++;
+			}
+		}
+	}
 	return (key_value);
 }
+
+
 
 //crear un nodo para lista de variables de entorno
 t_list	*set_env_node(char *env_var)
@@ -79,7 +107,7 @@ char	*get_env_key(t_list	**lst, t_list **node)
 		{
 			key_value = (t_kv *)curr->content;
 			return (key_value->key);
-		}	
+		}
 		curr = curr->next;
 	}
 	return (NULL);
@@ -92,15 +120,14 @@ char	*get_env_value(t_list	*lst, char *cmp)
 	char	*key;
 	t_list	*curr;
 
+	printf("\nHOLOOO\n");
 	curr = lst;
 	while (curr)
 	{
 		key_value = (t_kv *)curr->content;
 		key = key_value->key;
 		if (ft_strncmp(cmp, key, longer_str(key, cmp)) == 0)
-		{
 			return (key_value->value);
-		}
 		curr = curr->next;
 	}
 	return (NULL);

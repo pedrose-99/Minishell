@@ -1,4 +1,5 @@
 #include "libft/libft.h"
+#include "includes/minishell.h"
 #include <stdio.h>
 
 typedef struct s_parser
@@ -7,6 +8,30 @@ typedef struct s_parser
 	t_list *lexer; // Esta seria la tabla que contiene todos los datos del lexer // Numero de comandos
 
 }				t_parser;
+
+int ft_strcmp(char *s1, char *s2)
+{
+	int i;
+
+	i = 0;
+	while((s1[i] == s2[i]) && (s1[i] && s2[i]))
+		i++;
+	return((unsigned char)s1[i] - (unsigned char)s2[i]);
+}
+
+char *ft_strcpy(char *s1, char *s2)
+{
+	int i;
+
+	i = 0;
+	while (s2[i])
+	{
+		s1[i] = s2[i];
+		i++;
+	}
+	s1[i] = '\0';
+	return (s1);
+}
 
 void	init_parser(t_parser *parser)
 {
@@ -39,7 +64,7 @@ int	saltar_espace(char *line, int i)
 		i++;
 	return(i);
 }
- 
+
 int separar(t_parser *parser)
 {
 	int i;
@@ -68,6 +93,9 @@ int separar(t_parser *parser)
 		}
 		else if (parser->line[i] == '(')
 		{
+			if(ancla != i)
+				ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
+			ancla = i;
 			i++;
 			ancla = i;
 			i = condition_parentesis(parser->line, i);
@@ -83,7 +111,6 @@ int separar(t_parser *parser)
 	{
 		ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
 	}
-
 	return (0);
 }
 
@@ -92,7 +119,7 @@ int		check_parentesis(char *line)
 	int i;
 	int parentesis_abierto;
 	int parentesis_cerrado;
-	
+
 	i = 0;
 	parentesis_abierto = 0;
 	parentesis_cerrado = 0;
@@ -116,7 +143,11 @@ int		check_parentesis(char *line)
 			parentesis_cerrado++;
 		i++;
 	}
-	return(parentesis_cerrado - parentesis_abierto);
+	i = parentesis_abierto - parentesis_cerrado;
+	if (i == 0)
+		return (1);
+	else
+		return (0);
 }
 
 int 	check_comillas(char *line)
@@ -148,9 +179,7 @@ int check_caract(char *line)
 	i = 0;
 	while (line[i])
 	{
-		if (line[i] == '(')
-			i = condition_parentesis(line, i);
-		else if (line[i] == 39)
+		if (line[i] == 39)
 		{
 			i++;
 			while(line[i] != 39)
@@ -176,37 +205,209 @@ int		check_sintaxis(char *line)
 
 	check_other_carac = 0;
 	if (check_comillas (line))
+	{
 		check_paren = check_parentesis(line);
-	if (check_paren == 0)
+	}
+	else
+		return (0);
+	if (check_paren == 1)
+	{
 		check_other_carac = check_caract(line);
+	}
+	else
+		return (0);
 	if (check_other_carac)
+	{
 		return (1);
+	}
+	else
+		return (0);
+}
+
+
+
+void		handle_ctr_c_signal(t_parser *parser)
+{
+	free(parser->line);
+	parser->line = ft_strdup("");
+	ft_putstr_fd("^C\n", STDIN_FILENO); //Pasa el comando control c. Otra opcion podria ser hcaer kill al proceso
+}
+
+char	**env_list_to_array(t_list *env_list)
+{
+	char	**env_array;
+	char	*content;
+	int		i;
+
+	i = 0;
+	env_array = (char**)ft_calloc(
+	(ft_lstsize(env_list) + 1), sizeof(char*));
+	while (env_list)
+	{
+		content = (char*)env_list->content;
+		env_array[i] = content;
+		env_list = env_list->next;
+		i++;
+	}
+	env_array[i] = NULL;
+	return (env_array);
+}
+
+char	*get_word(char *line, int i)
+{
+	char *str;
+	int ancla;
+	int aux;
+
+	i++;
+	aux = 0;
+	ancla = i;
+	while (line[i])
+	{
+		if ((line[i] == ' ' || line[i] == '\t') || line[i + 1] == '\0')
+		{
+			str = (char*)malloc(sizeof(char) * (i - ancla + 1));
+			if (!str)
+			{
+				return (0);
+			}
+			while(ancla < i)
+			{
+				str[aux] = line[ancla];
+				ancla++;
+				aux ++;
+			}
+			if (line[i + 1] == '\0')
+			{
+				str[aux] = line[ancla];
+				aux++;
+			}
+			str[aux] = '\0';
+			return (str);
+		}
+		i++;
+	}
 	return (0);
 }
 
-int main(int argc, char **argv)
+void	sustituir_dollar(char *line, t_list *env_list)
+{
+	int i;
+	char *new_word;
+	char *new_line1;
+	char *new_line2;
+	int len;
+
+	i = 0;
+	len = 0;
+	while (line[len])
+		len++;
+	while (line[i])
+	{
+		if (line[i] == '$')
+		{
+			new_word = get_word(line, i);
+			new_word = get_env_value(env_list, new_word);
+			if (new_word)
+			{
+				new_line1 = ft_substr(line, 0, i);
+				new_line1 = ft_strjoin(new_line1, new_word);
+				while(line[i] && (line[i] != ' ' && line[i] != '\t'))
+					i++;
+				if (line[i])
+				{
+					new_line2 = ft_substr(line, i, len - 1);
+					new_line1 = ft_strjoin(new_line1, new_line2);
+				}
+				line = ft_strdup(new_line1);
+			}
+			else
+			{
+				new_line1 = ft_substr(line, 0, i);
+				while(line[i] && (line[i] != ' ' && line[i] != '\t'))
+					i++;
+				if (line[i])
+				{
+					new_line2 = ft_substr(line, i, len - 1);
+					new_line1 = ft_strjoin(new_line1, new_line2);
+				}
+				line = ft_strdup(new_line1);
+			}
+		}
+		i++;
+		new_word = NULL;
+	}
+	printf("%s", new_line1);
+}
+
+
+int main(int argc, char **argv, char **env)
 {
 	t_parser *parser;
 	int num_palabras = 0;
+	t_list	*env_lst;
 	int i;
 	int len;
 	char *line;
+	char *env_aux;
 	t_list *list;
-	
 	i = 0;
 	len = 0;
+
+	set_env_list(&env_lst, env);
+	//print_env_lst(env_lst);
 	while (argv[1][len])
 		len++;
 	parser = (t_parser*)malloc(sizeof(t_parser));
 	init_parser(parser);
-	line = (char*)malloc(sizeof(char)*len + 1);
-	while (i <= len)
+	line = (char*)malloc(sizeof(char)*(len + 1));
+	if (!line)
+		return 0;
+	sustituir_dollar("hola me llamo $USER y tuu $PWD $US", env_lst);
+	printf("%s", line);
+	//env_aux = get_env_var("USER", env_lst);
+	//printf("%s", env_aux);
+	
+}
+/*
+int main(int argc, char **argv, char **env)
+{
+	t_parser *parser;
+	int num_palabras = 0;
+	char **env_list;
+	t_list	*env_lst;
+	int i;
+	int len;
+	char *line;
+	t_list *list;
+	i = 0;
+	len = 0;
+
+	env_list = 
+	if (argc < 0)
+		return (1);
+	set_env_list(&env_lst, env);
+	//print_env_lst(env_lst);
+	while (argv[1][len])
+		len++;
+	parser = (t_parser*)malloc(sizeof(t_parser));
+	init_parser(parser);
+	line = (char*)malloc(sizeof(char)*(len + 1));
+	if (!line)
+		return 0;
+	while (argv[1][i])
 	{
 		line[i] = argv[1][i];
 		i++;
 	}
 	line[i] = '\0';
 	parser->line = line;
+	if (check_sintaxis(line) == 0)
+	{
+		printf("No vale \n");
+		return (0);
+	}
+	check_dollar(parser, env_lst);
 	num_palabras = separar(parser);
 	list = parser->lexer;
 	while(list)
@@ -215,6 +416,7 @@ int main(int argc, char **argv)
 		list = list->next;
 	}
 	free(line);
+	free(parser);
 	return (0);
 
-}
+}*/
