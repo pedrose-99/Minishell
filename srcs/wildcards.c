@@ -51,12 +51,16 @@ static void	match_wildcards(char *entry, char *cmp, int *space)
 
 void	wildcards(char *cmp)
 {
+	//puntero al directorio
 	DIR				*dir;
+	//informacion sobre el archivo que se esta sacando a cada momento
 	struct dirent	*entry;
 	int				space;
 
 	space = 0;
+	//empezamos a leer el directorio sintener en cuenta los .DS etc
 	dir = opendir(".");
+	//
 	entry = readdir(dir);
 	while (entry)
 	{
@@ -67,6 +71,16 @@ void	wildcards(char *cmp)
 }
 
 /*
+Funcion wildcards:
+
+1.  si solo hay delante del *hay un caracter valido:
+2. si solo hay detras del *un caracter valido
+3. Si hay delante y detras un caracter valido
+4. Si tienes un archivo que se llame pepe y pongo pepe*e sale mal pero si pongo pep*e sale bien o pe*e tambien da bien
+
+*/
+
+
 int	main(int argc, char **argv, char **env)
 {
 	t_list	*wildcard_lst;
@@ -82,4 +96,4 @@ int	main(int argc, char **argv, char **env)
 	wildcards(wildcard_lst);
 	return (0);
 }
-*/
+

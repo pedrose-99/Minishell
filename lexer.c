@@ -262,6 +262,7 @@ char	*get_word(char *line, int i)
 	i++;
 	aux = 0;
 	ancla = i;
+	printf("\n%c",line[i+1]);
 	while (line[i])
 	{
 		if ((line[i] == ' ' || line[i] == '\t') || line[i + 1] == '\0')
@@ -269,7 +270,7 @@ char	*get_word(char *line, int i)
 			str = (char*)malloc(sizeof(char) * (i - ancla + 1));
 			if (!str)
 			{
-				return (0);
+				return (NULL);
 			}
 			while(ancla < i)
 			{
@@ -287,7 +288,7 @@ char	*get_word(char *line, int i)
 		}
 		i++;
 	}
-	return (0);
+	return (NULL);
 }
 
 void	sustituir_dollar(char *line, t_list *env_list)
@@ -340,6 +341,188 @@ void	sustituir_dollar(char *line, t_list *env_list)
 	printf("%s", new_line1);
 }
 
+int		hay_palabra_before(char *word_before, char *archivo)
+{
+	int i;
+
+	i = 0;
+
+	while (word_before[i])
+	{
+		if (word_before[i] == archivo[i])
+			i++;
+		else
+			return (0);
+	}
+	return (1);
+}
+
+int		hay_palabra_after(char *word_after, char *archivo)
+{
+	int i;
+	int size;
+
+	i = 0;
+	size = 0;
+	while(archivo[size])
+		size++;
+	while (word_after[i])
+		i++;
+	while (i >= 0)
+	{
+		if (word_after[i] == archivo[size])
+		{
+			i--;
+			size--;
+		}
+		else
+			return (0);
+	}
+	return (1);
+}
+char	*get_word_after(char *line, int i)
+{
+	char *str;
+	int ancla;
+	int aux;
+
+	i++;
+	aux = 0;
+	ancla = i;
+	if ((line[i] == ' ' || line[i] == '\t') || line[i] == '\0')
+		return (NULL);
+	while (line[i])
+	{
+		if ((line[i] == ' ' || line[i] == '\t') || line[i + 1] == '\0')
+		{
+			str = (char*)malloc(sizeof(char) * (i - ancla + 1));
+			if (!str)
+			{
+				return (NULL);
+			}
+			while(ancla < i)
+			{
+				str[aux] = line[ancla];
+				ancla++;
+				aux ++;
+			}
+			if (line[i + 1] == '\0')
+			{
+				str[aux] = line[ancla];
+				aux++;
+			}
+			str[aux] = '\0';
+			return (str);
+		}
+		i++;
+	}
+	return (NULL);
+}
+
+char	*get_word_before(char *line, int i)
+{
+	char *str;
+	int ancla;
+	int aux;
+
+	i++;
+	aux = 0;
+	ancla = i;
+	while (line[i])
+	{
+		if ((line[i] == ' ' || line[i] == '\t') || line[i + 1] == '\0')
+		{
+			i++;
+			str = (char*)malloc(sizeof(char) * (ancla - i + 1));
+			if (!str)
+			{
+				return (NULL);
+			}
+			while(ancla - 1 > i)
+			{
+				str[aux] = line[i];
+				i++;
+				aux ++;
+			}
+			if (line[ancla + 1] == '\0')
+			{
+				str[aux] = line[ancla];
+				aux++;
+			}
+			str[aux] = '\0';
+			return (str);
+		}
+		i--;
+	}
+	return (NULL);
+
+}
+
+
+
+void change_wildcards(char *word_before, char *word_after, char *line, int i)
+{
+	DIR *dir;
+	struct dirent *ent;
+	char *str;
+
+	if (word_before[0] == '/')
+		dir = opendir("/");
+	else
+		dir = opendir(".");
+	str = NULL;
+	// Si pones opendir("./NOMbredirectorio entra en el")
+	if (dir == NULL)
+	{
+		printf("no se puede abrir directorio");
+	}
+	while ((ent = readdir(dir)) != NULL)
+	{
+		if (word_before)
+		{
+			if (hay_palabra_before(word_before, ent->d_name))
+			{
+				if (!str)
+				{
+					str = ft_strdup(ent->d_name);
+					str = ft_strjoin(str, " ");
+					printf("%s ", str);
+				}
+				else
+				{
+					str = ft_strjoin(str, ent->d_name);
+					str = ft_strjoin(str, " ");
+					printf("%s ", str);
+				}
+			}
+		}
+		//printf("%s ", ent->d_name);
+		//ent->d_type
+	}
+}
+
+// si dejo * es que esta mal y si no lo sustituyo
+char 	*gestion_wildcards(char *line)
+{
+	int i;
+	char *word_before;
+	char *word_after;
+
+	i = 0;
+	while(line[i])
+	{
+		if (line[i] == '*')
+		{
+			word_after = get_word_after(line, i);
+			word_before = get_word_before(line, i);
+			printf("\nword before = %s\n", word_before);
+			printf("word after = %s\n", word_after);
+			change_wildcards(word_before, word_after, line, i);
+		}
+		i++;
+	}
+	return (0);
+}
 
 int main(int argc, char **argv, char **env)
 {
@@ -363,8 +546,9 @@ int main(int argc, char **argv, char **env)
 	line = (char*)malloc(sizeof(char)*(len + 1));
 	if (!line)
 		return 0;
-	sustituir_dollar("hola me llamo $USER y tuu $PWD $US", env_lst);
-	printf("%s", line);
+	sustituir_dollar("hola me llamo $USER y tuu $PWD $US\n", env_lst);
+	printf("%s\n", line);
+	gestion_wildcards("hola l*e de pedro p*   ");
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
 	
