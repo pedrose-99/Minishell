@@ -418,7 +418,7 @@ char	*get_word_before(char *line, int i)
 		ancla--;
 	if (ancla != 0)
 		ancla++;
-	if (i == ancla)
+	if (i == ancla)    
 		return (NULL);
 	str = (char*)malloc(sizeof(char) * (i - ancla + 1));
 	if (!str)
