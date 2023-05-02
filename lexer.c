@@ -224,8 +224,6 @@ int		check_sintaxis(char *line)
 		return (0);
 }
 
-
-
 void		handle_ctr_c_signal(t_parser *parser)
 {
 	free(parser->line);
@@ -380,43 +378,32 @@ int		hay_palabra_after(char *word_after, char *archivo)
 	}
 	return (1);
 }
+
 char	*get_word_after(char *line, int i)
 {
 	char *str;
 	int ancla;
 	int aux;
 
-	i++;
 	aux = 0;
 	ancla = i;
-	if ((line[i] == ' ' || line[i] == '\t') || line[i] == '\0')
-		return (NULL);
-	while (line[i])
-	{
-		if ((line[i] == ' ' || line[i] == '\t') || line[i + 1] == '\0')
-		{
-			str = (char*)malloc(sizeof(char) * (i - ancla + 1));
-			if (!str)
-			{
-				return (NULL);
-			}
-			while(ancla < i)
-			{
-				str[aux] = line[ancla];
-				ancla++;
-				aux ++;
-			}
-			if (line[i + 1] == '\0')
-			{
-				str[aux] = line[ancla];
-				aux++;
-			}
-			str[aux] = '\0';
-			return (str);
-		}
+	while (line[i] != ' ' && line[i] != '\t' && line[i] != '\0')
 		i++;
+	if ((i - 1)== ancla)
+		return (NULL);
+	i--;
+	str = (char*)malloc(sizeof(char) * (i - ancla + 1));
+	if (!str)
+		return (NULL);
+	ancla++;
+	while (ancla <= i)
+	{
+		str[aux] = line[ancla];
+		ancla++;
+		aux ++;
 	}
-	return (NULL);
+	str[aux] = '\0';
+	return (str);
 }
 
 char	*get_word_before(char *line, int i)
@@ -425,40 +412,155 @@ char	*get_word_before(char *line, int i)
 	int ancla;
 	int aux;
 
-	i++;
 	aux = 0;
 	ancla = i;
-	while (line[i])
+	while (line[ancla] != ' ' && line[ancla] != '\t' && ancla != 0)
+		ancla--;
+	if (ancla != 0)
+		ancla++;
+	if (i == ancla)
+		return (NULL);
+	str = (char*)malloc(sizeof(char) * (i - ancla + 1));
+	if (!str)
+		return (NULL);
+	while (ancla < i)
 	{
-		if ((line[i] == ' ' || line[i] == '\t') || line[i + 1] == '\0')
-		{
-			i++;
-			str = (char*)malloc(sizeof(char) * (ancla - i + 1));
-			if (!str)
-			{
-				return (NULL);
-			}
-			while(ancla - 1 > i)
-			{
-				str[aux] = line[i];
-				i++;
-				aux ++;
-			}
-			if (line[ancla + 1] == '\0')
-			{
-				str[aux] = line[ancla];
-				aux++;
-			}
-			str[aux] = '\0';
-			return (str);
-		}
-		i--;
+		str[aux] = line[ancla];
+		ancla++;
+		aux ++;
 	}
-	return (NULL);
+	str[aux] = '\0';
+	return (str);
+}
 
+int		check_size(char *word_before, char *word_after, char *name)
+{
+	int size;
+	int size_word_a;
+	int size_word_b;
+
+
+	size = 0;
+	size_word_a = 0;
+	size_word_b = 0;
+	while (name[size])
+		size++;
+	while (word_before[size_word_b])
+		size_word_b++;
+	while (word_after[size_word_a])
+		size_word_a++;
+	if (size_word_b > size || size_word_a > size)
+		return (0);
+	else
+	{
+		size--;
+		return (size);
+	}
+}
+
+char *case_word_before_after(char *word_before, char *word_after, struct dirent ent, char *str)
+{
+	int i;
+	int j;
+	int size;
+	int aux;
+	
+	i = 0;
+	j = 0;
+	aux = 0;
+	size = check_size(word_before, word_after, ent->d_name);
+	if (size == 0)
+		return (NULL);
+	str = (char*)malloc(sizeof(char)*(2));
+	if (!str)
+		return(NULL);
+	if (word_before[aux] == '/')
+	{
+		aux++;
+		str[0] = '/';
+	}
+	while (word_before[aux])
+	{
+		if (word_before[aux] != ent->d_name[i])
+			return (NULL);
+		i++;
+		aux++;
+	}
+	while (word_after[j])
+		j++;
+	j--;
+	while (word_after[j] && size >= i)
+	{
+		if (word_after[j] != ent->d_name[size])
+			return (NULL);
+		j--;
+		size--;
+	}
+	if (ent->d_name[i] == '.')
+		return (NULL);
+	str = ft_strjoin(str, ent->d_name);
+	return (str);
 }
 
 
+char *case_word_before(char *word_before, char *name, struct dirent *ent)
+{
+	int i;
+	int aux;
+	char *str;
+	int ancla;
+
+	i = 0;
+	aux = 0;
+	str = NULL;
+	str = (char*)malloc(sizeof(char)*(2));
+	if (!str)
+		return (NULL);
+	if (word_before[aux] == '/')
+	{
+		aux++;
+		str[0] = '/';
+	}
+	while (word_before[aux])
+	{
+		if (word_before[aux] != name[i])
+			return (NULL);
+		i++;
+		aux++;
+	}
+	if (name[i] == '.' || (name[0] == '.' && name[1] == '\0'))
+		return (NULL);
+	str = ft_strjoin(str, name);
+	return (str);
+}
+
+
+char *case_word_after(char *word_after, char *name, struct dirent *ent)
+{
+	int j;
+	int size;
+	int i;
+
+	size = 0;
+	i = 0;
+	while (name[size])
+		size++;
+	j = 0;
+	size --;
+	while (word_after[j])
+		j++;
+	j--;
+	while (word_after[j] && size >= i)
+	{
+		if (word_after[j] != name[size])
+			return (NULL);
+		j--;
+		size--;
+	}
+	if (name[0] == '.' && (name[1] == '.' || name[1] == '\0'))
+		return (NULL);
+	return (name);
+}
 
 void change_wildcards(char *word_before, char *word_after, char *line, int i)
 {
@@ -466,39 +568,33 @@ void change_wildcards(char *word_before, char *word_after, char *line, int i)
 	struct dirent *ent;
 	char *str;
 
-	if (word_before[0] == '/')
+	if (!word_before)
+		dir = opendir(".");
+	else if (word_before[0] == '/')
 		dir = opendir("/");
 	else
 		dir = opendir(".");
 	str = NULL;
 	// Si pones opendir("./NOMbredirectorio entra en el")
 	if (dir == NULL)
-	{
 		printf("no se puede abrir directorio");
-	}
 	while ((ent = readdir(dir)) != NULL)
 	{
-		if (word_before)
+		if (word_before && word_after)
+			str = case_word_before_after(word_before, word_after, ent, str);
+		else if (word_before)
+			str = case_word_before(word_before, ent->d_name, ent);
+		else if (word_after)
+			str = case_word_after(word_after, ent->d_name, ent);
+		else
 		{
-			if (hay_palabra_before(word_before, ent->d_name))
-			{
-				if (!str)
-				{
-					str = ft_strdup(ent->d_name);
-					str = ft_strjoin(str, " ");
-					printf("%s ", str);
-				}
-				else
-				{
-					str = ft_strjoin(str, ent->d_name);
-					str = ft_strjoin(str, " ");
-					printf("%s ", str);
-				}
-			}
+			if (ent->d_name[0] != '.')
+				printf("%s ",ent->d_name);
 		}
-		//printf("%s ", ent->d_name);
-		//ent->d_type
+		if (str)
+			printf("%s ", str);
 	}
+	printf("\n");
 }
 
 // si dejo * es que esta mal y si no lo sustituyo
@@ -515,7 +611,7 @@ char 	*gestion_wildcards(char *line)
 		{
 			word_after = get_word_after(line, i);
 			word_before = get_word_before(line, i);
-			printf("\nword before = %s\n", word_before);
+			printf("word before = %s\n", word_before);
 			printf("word after = %s\n", word_after);
 			change_wildcards(word_before, word_after, line, i);
 		}
@@ -546,12 +642,12 @@ int main(int argc, char **argv, char **env)
 	line = (char*)malloc(sizeof(char)*(len + 1));
 	if (!line)
 		return 0;
-	sustituir_dollar("hola me llamo $USER y tuu $PWD $US\n", env_lst);
-	printf("%s\n", line);
-	gestion_wildcards("hola l*e de pedro p*   ");
+	// Mirar el $?
+	//sustituir_dollar("hola me llamo $USER y tuu $? $US\n", env_lst);
+	//printf("%s\n", line);
+	gestion_wildcards("/.* de pedro es*s");
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
-	
 }
 /*
 int main(int argc, char **argv, char **env)
@@ -603,4 +699,22 @@ int main(int argc, char **argv, char **env)
 	free(parser);
 	return (0);
 
-}*/
+}
+
+
+
+
+			if (hay_palabra_before(word_before, ent->d_name))
+			{
+				if (!str)
+				{
+					str = ft_strdup(ent->d_name);
+					str = ft_strjoin(str, " ");
+					printf("%s ", str);
+				}
+				else
+				{
+					str = ft_strjoin(str, ent->d_name);
+					str = ft_strjoin(str, " ");
+					printf("%s ", str);
+				}*/
