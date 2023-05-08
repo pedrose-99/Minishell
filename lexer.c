@@ -2,7 +2,6 @@
 #include "includes/minishell.h"
 #include <stdio.h>
 
-t_signals g_sig;
 typedef struct s_parser
 {
 	char 	*line; // Esta linea va a contener 
@@ -261,7 +260,6 @@ char	*get_word(char *line, int i)
 	i++;
 	aux = 0;
 	ancla = i;
-	printf("\n%c",line[i+1]);
 	while (line[i])
 	{
 		if ((line[i] == ' ' || line[i] == '\t') || line[i + 1] == '\0')
@@ -637,8 +635,8 @@ int	check_num_asteriscos(char *str, int i)
 	int aux;
 
 	aux = i;
-	num_ast = 1;
-	while (str[aux] != ' ' || str[aux] != '\t' || str[aux] != '\0')
+	num_ast = 0;
+	while (str[aux] != ' ' && str[aux] != '\t' && str[aux] != '\0')
 	{
 		if (str[aux] == '*')
 			num_ast++;
@@ -682,25 +680,71 @@ void change_wildcards(char *word_before, char *word_after, char *line, int i)
 	printf("\n");
 }
 
-void	more_wildcards(char *line, int i)
+char	*get_word_after_m(char *line, int i)
 {
+	char *str;
 	int ancla;
-	char *word_before;
-	char *word_after;
 	int aux;
 
 	aux = 0;
-	word_before = get_word_before(line, i);
-	while(line[i] != ' ' || line[i] != '\t' || line [i])
+	ancla = i;
+	i++;
+	while (line[i] != ' ' && line[i] != '\t' && line[i] != '\0' && line[i] != '*')
+		i++;
+	if ((i - 1)== ancla)
+		return (NULL);
+	i--;
+	str = (char*)malloc(sizeof(char) * (i - ancla + 1));
+	if (!str)
+		return (NULL);
+	ancla++;
+	while (ancla <= i)
 	{
-		while(line[i] != '*')
+		str[aux] = line[ancla];
+		ancla++;
+		aux ++;
+	}
+	str[aux] = '\0';
+	return (str);
+}
+
+void	more_wildcards(char *line, int i, int num_ast)
+{
+	DIR *dir;
+	struct dirent *ent;
+	char *word_before;
+	char *word_after;
+	char *path;
+	char *str;
+
+	word_before = get_word_before(line, i);
+	word_after = get_word_after_m(line, i);
+	if (!word_before)
+		dir = opendir(".");
+	else if (word_before[0] == '/')
+		dir = opendir("/");
+	else
+		dir = opendir(".");
+	while ((ent = readdir(dir)) != NULL)
+	{
+		if (ent->d_type == 4)
 		{
-			word_after[aux] = line[i];
-			aux++;
-			i++;
+			//dir = opendir(ent->d_name);
+			printf("%s ", ent->d_name);
 		}
 	}
+	i++;
 }
+
+//HAcer recursividad.
+
+
+//Obtener directorios
+void	get_dir()
+{
+
+}
+
 
 // si dejo * es que esta mal y si no lo sustituyo
 char 	*gestion_wildcards(char *line)
@@ -726,7 +770,7 @@ char 	*gestion_wildcards(char *line)
 			}
 			else
 			{
-				more_wildcards(line, i);
+				more_wildcards(line, i, num_ast);
 			}
 		}
 		i++;
@@ -760,9 +804,9 @@ int main(int argc, char **argv, char **env)
 	if (!line)
 		return 0;
 	// Mirar el $?
-	//sustituir_dollar("hola me llamo $USER y tuu $? $US\n", env_lst);
+	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("?* de pedro es*s");
+	gestion_wildcards("*/*/* de pedro es*s");
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
 }
