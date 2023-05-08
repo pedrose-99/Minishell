@@ -2,6 +2,7 @@
 #include "includes/minishell.h"
 #include <stdio.h>
 
+t_signals g_sig;
 typedef struct s_parser
 {
 	char 	*line; // Esta linea va a contener 
@@ -413,7 +414,7 @@ char	*get_word_before(char *line, int i)
 	int aux;
 
 	aux = 0;
-	ancla = i;
+	ancla = i; 
 	while (line[ancla] != ' ' && line[ancla] != '\t' && ancla != 0)
 		ancla--;
 	if (ancla != 0)
@@ -458,7 +459,59 @@ int		check_size(char *word_before, char *word_after, char *name)
 	}
 }
 
-char *case_word_before_after(char *word_before, char *word_after, struct dirent ent, char *str)
+char *case_director(char *word_after, char *word_before, char *name, struct dirent *ent)
+{
+	int j;
+	int i;
+	int size;
+	char *str;
+
+	size = 0;
+	i = 0;
+	while (name[size])
+		size++;
+	j = 0;
+	size --;
+	while (word_after[j])
+		j++;
+	//printf("%d%s\n", ent->d_type, name);
+	j--;
+	j--;
+	if (word_before)
+	{
+		if (word_before[0] == '/')
+		{
+			str = ft_strjoin("/", name);
+		}
+		else
+		{
+			printf("HOLO");
+			str = getcwd(str, 100);
+			str = ft_strjoin(str, "/");
+			str = ft_strjoin(str, name);
+		}
+		if (access(str, R_OK) != 0)
+			return NULL;
+	}
+	if (ent->d_type == 4 || ent->d_type == 10)
+	{
+		while (word_after[j] && size >= i)
+		{
+			if (word_after[j] != name[size])
+				return (NULL);
+			j--;
+			size--;
+		}
+	}
+	else
+		return (NULL);
+	if (name[0] == '.' && (name[1] == '.' || name[1] == '\0')) //comprobar el .git
+		return (NULL);
+	name = ft_strjoin(name, "/");
+	return (name);
+}
+
+char *case_word_before_after(char *word_before, char *word_after, struct dirent *ent, char *str)
 {
 	int i;
 	int j;
@@ -489,6 +542,13 @@ char *case_word_before_after(char *word_before, char *word_after, struct dirent 
 	while (word_after[j])
 		j++;
 	j--;
+	if (word_after[j] == '/')
+	{
+		str = ft_strjoin(str, case_director(word_after, word_before, ent->d_name, ent));
+		if (ent->d_name[i] == '.')
+			return (NULL);
+		return (str);
+	}
 	while (word_after[j] && size >= i)
 	{
 		if (word_after[j] != ent->d_name[size])
@@ -534,7 +594,6 @@ char *case_word_before(char *word_before, char *name, struct dirent *ent)
 	return (str);
 }
 
-
 char *case_word_after(char *word_after, char *name, struct dirent *ent)
 {
 	int j;
@@ -550,6 +609,16 @@ char *case_word_after(char *word_after, char *name, struct dirent *ent)
 	while (word_after[j])
 		j++;
 	j--;
+	if (word_after[j] == '/')
+	{
+		name = case_director(word_after, NULL, name, ent);
+		if (name)
+		{
+			if (name[0] == '.')
+				return (NULL);
+		}
+		return (name);
+	}
 	while (word_after[j] && size >= i)
 	{
 		if (word_after[j] != name[size])
@@ -560,6 +629,22 @@ char *case_word_after(char *word_after, char *name, struct dirent *ent)
 	if (name[0] == '.' && (name[1] == '.' || name[1] == '\0'))
 		return (NULL);
 	return (name);
+}
+
+int	check_num_asteriscos(char *str, int i)
+{
+	int num_ast;
+	int aux;
+
+	aux = i;
+	num_ast = 1;
+	while (str[aux] != ' ' || str[aux] != '\t' || str[aux] != '\0')
+	{
+		if (str[aux] == '*')
+			num_ast++;
+		aux++;
+	}
+	return (num_ast);
 }
 
 void change_wildcards(char *word_before, char *word_after, char *line, int i)
@@ -597,28 +682,58 @@ void change_wildcards(char *word_before, char *word_after, char *line, int i)
 	printf("\n");
 }
 
+void	more_wildcards(char *line, int i)
+{
+	int ancla;
+	char *word_before;
+	char *word_after;
+	int aux;
+
+	aux = 0;
+	word_before = get_word_before(line, i);
+	while(line[i] != ' ' || line[i] != '\t' || line [i])
+	{
+		while(line[i] != '*')
+		{
+			word_after[aux] = line[i];
+			aux++;
+			i++;
+		}
+	}
+}
+
 // si dejo * es que esta mal y si no lo sustituyo
 char 	*gestion_wildcards(char *line)
 {
 	int i;
 	char *word_before;
 	char *word_after;
+	int num_ast;
 
 	i = 0;
 	while(line[i])
 	{
 		if (line[i] == '*')
 		{
-			word_after = get_word_after(line, i);
-			word_before = get_word_before(line, i);
-			printf("word before = %s\n", word_before);
-			printf("word after = %s\n", word_after);
-			change_wildcards(word_before, word_after, line, i);
+			num_ast = check_num_asteriscos(line, i);
+			if (num_ast == 1)
+			{
+				word_after = get_word_after(line, i);
+				word_before = get_word_before(line, i);
+				printf("word before = %s\n", word_before);
+				printf("word after = %s\n", word_after);
+				change_wildcards(word_before, word_after, line, i);
+			}
+			else
+			{
+				more_wildcards(line, i);
+			}
 		}
 		i++;
 	}
 	return (0);
 }
+
 
 int main(int argc, char **argv, char **env)
 {
@@ -633,6 +748,8 @@ int main(int argc, char **argv, char **env)
 	i = 0;
 	len = 0;
 
+	if (argc == 1)
+		return (0);
 	set_env_list(&env_lst, env);
 	//print_env_lst(env_lst);
 	while (argv[1][len])
@@ -645,7 +762,7 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER y tuu $? $US\n", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("/.* de pedro es*s");
+	gestion_wildcards("?* de pedro es*s");
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
 }
