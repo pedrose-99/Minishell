@@ -13,7 +13,7 @@ void error(const char *s);
 long fileSize(char *fname);
 
 /* Sacamos el tipo de archivo haciendo un stat(), es como el stat de la línea de comandos */
-unsigned char statFileType(char *fname);
+unsigned char stat_file_type(char *fname);
 
 /* Función que hace algo con un archivo, pero le pasamos el dirent completo, usaremos más datos */
 void procesoArchivo(char *ruta, struct dirent *ent);
@@ -110,7 +110,7 @@ void procesoArchivo(char *ruta, struct dirent *ent)
   /* no nos la da (directamente, una vez que hacemos stat sí lo hace), y es en estos casos donde probamos con stat() */
   tipo=ent->d_type;
   if (tipo==DT_UNKNOWN)
-    tipo=statFileType(nombrecompleto);
+    tipo=stat_file_type(nombrecompleto);
 
   if (tipo!=DT_UNKNOWN)
     {
@@ -134,7 +134,7 @@ void procesoArchivo(char *ruta, struct dirent *ent)
 }
 
 /* stat() vale para mucho más, pero sólo queremos el tipo ahora */
-unsigned char statFileType(char *fname)
+unsigned char stat_file_type(char *fname)
 {
   struct stat sdata;
 

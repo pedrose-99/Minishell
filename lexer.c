@@ -708,6 +708,70 @@ char	*get_word_after_m(char *line, int i)
 	return (str);
 }
 
+char *get_full_name(char *ruta, struct dirent *ent)
+{
+	char *nombrecompleto;
+	int tmp;
+
+	tmp = ft_strlen(ruta);
+	nombrecompleto=malloc(tmp + ft_strlen(ent->d_name) + 2);
+	if (ruta[tmp-1]=='/')
+		sprintf(nombrecompleto,"%s%s", ruta, ent->d_name);
+	else
+		sprintf(nombrecompleto,"%s/%s", ruta, ent->d_name);
+	return nombrecompleto;
+}
+
+char *genera_pos_str(int niv)
+{
+	int i;
+	char *tmp=malloc(niv*2+1);
+	for (i=0; i<niv*2; ++i)
+		tmp[i]=' ';
+	tmp[niv*2]='\0';
+	return tmp;
+}
+
+unsigned cuenta_archivos(char *ruta, int niv)
+{
+	DIR *dir;
+	struct dirent *ent;
+	unsigned numfiles; 
+	char *nombrecompleto;
+	char *posstr;
+
+	numfiles = 0;
+	dir = opendir (ruta);
+	if (dir == NULL)
+	{
+		printf("Vacio el directorio");
+		return (0);
+	}
+	while ((ent = readdir (dir)) != NULL)
+	{
+		if ( (strcmp(ent->d_name, ".")!=0) && (strcmp(ent->d_name, "..")!=0) )
+		{
+			nombrecompleto=get_full_name(ruta, ent);
+			if (ent->d_type!= 4)
+			{
+				++numfiles;
+			}
+			else
+			{
+				posstr=genera_pos_str(niv);
+				printf("%sEntrando en: %s\n", posstr, nombrecompleto);
+				printf("%s%s . Total: %u archivos ", posstr, nombrecompleto, cuenta_archivos(nombrecompleto, niv+1));
+				printf("\n");
+				free(posstr);
+			}
+			free(nombrecompleto);
+		}
+    }
+	closedir (dir);
+	return numfiles;
+}
+
+
 void	more_wildcards(char *line, int i, int num_ast)
 {
 	DIR *dir;
@@ -736,14 +800,10 @@ void	more_wildcards(char *line, int i, int num_ast)
 	i++;
 }
 
-//HAcer recursividad.
 
 
-//Obtener directorios
-void	get_dir()
-{
+// SI *S* busca todas las palabras que contengan S
 
-}
 
 
 // si dejo * es que esta mal y si no lo sustituyo
@@ -806,7 +866,7 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("*/*/* de pedro es*s");
+	gestion_wildcards("*/ de pedro es*s");
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
 }
