@@ -902,14 +902,36 @@ char *get_name(char *ruta, struct dirent *ent)
 	}
 	else
 	{
-		nombrecompleto = ft_strjoin(ruta, "/");
+		nombrecompleto = ft_strjoin(ruta, "/", 0);
 		nombrecompleto = ft_strjoin(nombrecompleto, ent->d_name);
 	}
 	printf("%s\n", nombrecompleto);
 	return nombrecompleto;
 }
 
-void	funcion_wildcards(char *ruta, char **line)// añadir t_list **list
+int	aparece_al_principio(struct dirent *ent, char *line)
+{
+	int i;
+	int j;
+
+	i = 0;
+	j = 0;
+	while(line[j])
+	{
+		if (ent->d_name[i] == line[j])
+		{
+			i++;
+			j++;
+		}
+		else
+		{
+			return (0);
+		}
+	}
+	return (1);
+}
+
+void	funcion_wildcards(char *ruta, char **line, int pos)// añadir t_list **list
 {
 	DIR *dir;
 	struct dirent *ent;
@@ -925,12 +947,20 @@ void	funcion_wildcards(char *ruta, char **line)// añadir t_list **list
 	{
 		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
 		{
-			nombrecompleto = get_name(ruta, ent); 
+			if (pos == 0)
+			{
+				if (aparece_al_principio(ent, line[0]) == 0)
+					return ;
+				pos++;
+			}
+
+			nombrecompleto = get_name(ruta, ent);
 			/*if (ent->d_type != 4)
 			{
 		
 				//funcion_wildcards(nombrecompleto, &line[pos], list);
 			}*/
+
 			//si se cumple que existe:
 			//ft_list_add(list, new_nodo(nombrecompleto))
 		}
@@ -970,7 +1000,7 @@ char 	*gestion_wildcards(char *line)
 					i++;
 				aster = new_split(ft_substr(line, ancla, i));
 				int j = 0;
-				funcion_wildcards("/", aster);
+				funcion_wildcards("/", aster, 0);
 				//more_wildcards(line, i, num_ast);
 			}
 		}
@@ -1007,7 +1037,7 @@ int main(int argc, char **argv, char **env)
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
 
-	gestion_wildcards("*cs* de pedro es*s");
+	gestion_wildcards("s*cs*a de pedro es*s");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
