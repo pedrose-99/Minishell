@@ -9,6 +9,105 @@ typedef struct s_parser
 
 }				t_parser;
 
+
+
+// SI *S* busca todas las palabras que contengan S
+
+char	**make_array_wildcard(char *s)
+{
+	char	**array_2d;
+	int		cont;
+	int		len;
+
+	cont = 0;
+	len = 0;
+	if (s[cont] == '*')
+		len++;
+	while (s[cont] == '*' && s[cont])
+			cont++;
+	while (s[cont])
+	{
+		len++;
+		while (s[cont] != '*' && s[cont])
+			cont++;
+		while (s[cont] == '*' && '*' != 0)
+			cont++;
+	}
+	cont--;
+	if (s[cont] == '*')
+		len++;
+	array_2d = (char **)malloc(sizeof(char *) * (len + 1));
+	return (array_2d);
+}
+
+static void	free_array2d(char **array_2d, int j)
+{
+	int	i;
+
+	i = 0;
+	while (i < j)
+	{
+		free(array_2d[j]);
+		i++;
+	}
+	array_2d = NULL;
+}
+
+static void	fill_array_wildcard(char **array_2d, char const *s)
+{
+	int		i;
+	int		j;
+	int		word_size;
+
+	i = 0;
+	j = 0;
+	if (s[i] == '*')
+	{
+		array_2d[j] = ft_substr(s, 0, 1);
+		j++;
+	}
+	while (s[i] == '*' && s[i])
+		i++;
+	while (s[i])
+	{
+		word_size = 0;
+		while (s[i + word_size] != '*' && s[i + word_size] != '\0')
+			word_size++;
+		array_2d[j] = ft_substr(s, i, word_size);
+		if (!array_2d[j])
+		{
+			free_array2d(array_2d, j);
+			break ;
+		}
+		i = i + word_size;
+		j++;
+		while (s[i] == '*' && s[i])
+			i++;
+	}
+	i--;
+	if (s[i] == '*')
+	{
+		array_2d[j] = ft_substr("*", 0, 1);
+		j++;
+	}
+	array_2d[j] = NULL;
+}
+
+char **new_split(char *s)
+{
+	char	**array_2d;
+
+	if (!s)
+		return (NULL);
+	array_2d = make_array_wildcard(s);
+	if (!array_2d)
+		return (NULL);
+	fill_array_wildcard(array_2d, s);
+	if (!array_2d)
+		return (NULL);
+	return (array_2d);
+}
+
 int ft_strcmp(char *s1, char *s2)
 {
 	int i;
@@ -556,6 +655,7 @@ char *case_word_before_after(char *word_before, char *word_after, struct dirent 
 	}
 	if (ent->d_name[i] == '.')
 		return (NULL);
+	// hacer caso srcs*s ---> te tiene que dar mal
 	str = ft_strjoin(str, ent->d_name);
 	return (str);
 }
@@ -708,19 +808,6 @@ char	*get_word_after_m(char *line, int i)
 	return (str);
 }
 
-char *get_full_name(char *ruta, struct dirent *ent)
-{
-	char *nombrecompleto;
-	int tmp;
-
-	tmp = ft_strlen(ruta);
-	nombrecompleto=malloc(tmp + ft_strlen(ent->d_name) + 2);
-	if (ruta[tmp-1]=='/')
-		sprintf(nombrecompleto,"%s%s", ruta, ent->d_name);
-	else
-		sprintf(nombrecompleto,"%s/%s", ruta, ent->d_name);
-	return nombrecompleto;
-}
 
 char *genera_pos_str(int niv)
 {
@@ -751,7 +838,7 @@ unsigned cuenta_archivos(char *ruta, int niv)
 	{
 		if ( (strcmp(ent->d_name, ".")!=0) && (strcmp(ent->d_name, "..")!=0) )
 		{
-			nombrecompleto=get_full_name(ruta, ent);
+			//nombrecompleto=get_full_name(ruta, ent);
 			if (ent->d_type!= 4)
 			{
 				++numfiles;
@@ -800,28 +887,74 @@ void	more_wildcards(char *line, int i, int num_ast)
 	i++;
 }
 
+char *get_name(char *ruta, struct dirent *ent)
+{
+	char *nombrecompleto;
+	int tmp;
 
+	tmp = ft_strlen(ruta);
+	nombrecompleto = malloc(tmp+strlen(ent->d_name)+2);
+	if (ruta[tmp-1] == '/')
+		nombrecompleto = ft_strjoin(ruta, ent->d_name);
+	else if (ruta[0] == '.')
+	{
+		nombrecompleto = ft_strdup(ent->d_name);
+	}
+	else
+	{
+		nombrecompleto = ft_strjoin(ruta, "/");
+		nombrecompleto = ft_strjoin(nombrecompleto, ent->d_name);
+	}
+	printf("%s\n", nombrecompleto);
+	return nombrecompleto;
+}
 
-// SI *S* busca todas las palabras que contengan S
+void	funcion_wildcards(char *ruta, char **line)// añadir t_list **list
+{
+	DIR *dir;
+	struct dirent *ent;
+	char *nombrecompleto;
 
+	dir = opendir(ruta);
+	if (dir == NULL)
+	{
+		printf("Por aqui no paso");
+		return ;
+	}
+	while ((ent = readdir (dir)) != NULL)
+	{
+		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
+		{
+			nombrecompleto = get_name(ruta, ent); 
+			/*if (ent->d_type != 4)
+			{
+		
+				//funcion_wildcards(nombrecompleto, &line[pos], list);
+			}*/
+			//si se cumple que existe:
+			//ft_list_add(list, new_nodo(nombrecompleto))
+		}
+	}
+}
 
 
 // si dejo * es que esta mal y si no lo sustituyo
 char 	*gestion_wildcards(char *line)
 {
 	int i;
+	int ancla;
 	char *word_before;
 	char *word_after;
-	int num_ast;
+	char **aster;
 
 	i = 0;
 	while(line[i])
 	{
 		if (line[i] == '*')
 		{
-			num_ast = check_num_asteriscos(line, i);
-			if (num_ast == 1)
+			if (check_num_asteriscos(line, i) == 1)
 			{
+				printf("\nENTRA AQUI\n");
 				word_after = get_word_after(line, i);
 				word_before = get_word_before(line, i);
 				printf("word before = %s\n", word_before);
@@ -830,14 +963,21 @@ char 	*gestion_wildcards(char *line)
 			}
 			else
 			{
-				more_wildcards(line, i, num_ast);
+				while (i > 0 && line[i] != ' ')
+					i--;
+				ancla = i;
+				while(line[i] != ' ' && line[i])
+					i++;
+				aster = new_split(ft_substr(line, ancla, i));
+				int j = 0;
+				funcion_wildcards("/", aster);
+				//more_wildcards(line, i, num_ast);
 			}
 		}
 		i++;
 	}
 	return (0);
 }
-
 
 int main(int argc, char **argv, char **env)
 {
@@ -866,7 +1006,9 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("*/ de pedro es*s");
+
+	gestion_wildcards("*cs* de pedro es*s");
+	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
 }

@@ -12,12 +12,12 @@ char *get_full_name(char *ruta, struct dirent *ent)
 	char *nombrecompleto;
 	int tmp;
 
-	tmp=strlen(ruta);
-	nombrecompleto=malloc(tmp+strlen(ent->d_name)+2);
-	if (ruta[tmp-1]=='/')
-	sprintf(nombrecompleto,"%s%s", ruta, ent->d_name);
+	tmp = strlen(ruta);
+	nombrecompleto = malloc(tmp+strlen(ent->d_name)+2);
+	if (ruta[tmp-1] == '/')
+		sprintf(nombrecompleto,"%s%s", ruta, ent->d_name);
 	else
-	sprintf(nombrecompleto,"%s/%s", ruta, ent->d_name);
+		sprintf(nombrecompleto,"%s/%s", ruta, ent->d_name);
  
 	return nombrecompleto;
 }
@@ -25,7 +25,7 @@ char *get_full_name(char *ruta, struct dirent *ent)
 char *genera_pos_str(int niv)
 {
 	int i;
-	char *tmp=malloc(niv*2+1);
+	char *tmp = malloc(niv*2+1);
 	for (i=0; i<niv*2; ++i)
 		tmp[i]=' ';
 	tmp[niv*2]='\0';
@@ -96,12 +96,7 @@ void	funcion_direct(char *ruta, int niv, int num_ast, char *line)
 			}
 		}
 	}
-
-	
 }
-
-
-
 
 unsigned cuenta_archivos(char *ruta, int niv)
 {
@@ -122,7 +117,7 @@ unsigned cuenta_archivos(char *ruta, int niv)
 		if ( (strcmp(ent->d_name, ".")!=0) && (strcmp(ent->d_name, "..")!=0) )
 		{
 			nombrecompleto=get_full_name(ruta, ent);
-			if (ent->d_type!= 4)
+			if (ent->d_type != 4)
 			{
 				++numfiles;
 			}
