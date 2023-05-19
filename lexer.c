@@ -887,6 +887,19 @@ void	more_wildcards(char *line, int i, int num_ast)
 	i++;
 }
 
+int ft_strlen_matriz(char **line)
+{
+	int i;
+
+	i = 0;
+	while (line[i])
+	{
+		i++;
+	}
+	return (i);
+}
+
+
 char *get_name(char *ruta, struct dirent *ent)
 {
 	char *nombrecompleto;
@@ -902,10 +915,9 @@ char *get_name(char *ruta, struct dirent *ent)
 	}
 	else
 	{
-		nombrecompleto = ft_strjoin(ruta, "/", 0);
+		nombrecompleto = ft_strjoin(ruta, "/");
 		nombrecompleto = ft_strjoin(nombrecompleto, ent->d_name);
 	}
-	printf("%s\n", nombrecompleto);
 	return nombrecompleto;
 }
 
@@ -916,7 +928,9 @@ int	aparece_al_principio(struct dirent *ent, char *line)
 
 	i = 0;
 	j = 0;
-	while(line[j])
+	if (line[0] == '*')
+		return (1);
+	while(line[j] && ent->d_name[i])
 	{
 		if (ent->d_name[i] == line[j])
 		{
@@ -924,36 +938,164 @@ int	aparece_al_principio(struct dirent *ent, char *line)
 			j++;
 		}
 		else
-		{
 			return (0);
-		}
 	}
 	return (1);
 }
 
-void	funcion_wildcards(char *ruta, char **line, int pos)// añadir t_list **list
+int aparece_en_medio_barra(struct dirent *ent, char *line)
+{
+	int i;
+	int j;
+	int ancla;
+	
+	i = 0;
+	j = 0;
+	while (ent->d_name[i])
+		i++;
+	while (line[j] != '/')
+		j++;
+	j--;
+	ancla = j;
+	while (line[j] && ent->d_name[i])
+	{
+		//Posiblemente comprobar directamente todo. 
+		//comprobar la ruta completa directamente
+		if (line[j] == ent->d_name[i])
+		{
+			i++;
+			j++;
+		}
+		else
+		{
+			j = ancla;
+			if (line[j] == ent->d_name[i])
+			{
+				i++;
+				j++;
+			}
+		}
+		if (line[j] == '/')
+		{
+			return (1);
+		}
+	}
+	return (0);
+	
+}
+
+int aparece_en_medio(struct dirent *ent, char *line)
+{
+	int i;
+	int j;
+
+	i = 0;
+	j = 0;
+	while (line[j])
+	{
+		if (line[j] == '/')
+		{
+			return (aparece_en_medio_barra(ent, line));
+		}
+		j++;
+	}
+	j = 0;
+	while (line[j] && ent->d_name[i])
+	{
+		if (line[j] == ent->d_name[i])
+		{
+			j++;
+			i++;
+			if (line[j] == '\0')
+				return (1);
+		}
+		else
+		{
+			j = 0;
+			i++;
+		}
+	}
+	return(0);
+
+}
+
+int 	hay_barra(char *line)
+{
+	int i;
+
+	i = 0;
+	while (line[i])
+	{
+		if (line[i] == '/')
+			return (1);
+		i++;
+	}
+	return (0);
+}
+
+void	funcion_wildcards(char *ruta, char **line, int pos, int barra)// añadir t_list **list
 {
 	DIR *dir;
 	struct dirent *ent;
 	char *nombrecompleto;
+	int solucion;
+	int ancla;
 
+	solucion = 0;
 	dir = opendir(ruta);
 	if (dir == NULL)
 	{
 		printf("Por aqui no paso");
 		return ;
 	}
+	printf("%s\n\n", ruta);
+	ancla = pos;
 	while ((ent = readdir (dir)) != NULL)
 	{
 		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
 		{
+			//Posible while (pos != ft_strlen_matriz - 1)
 			if (pos == 0)
 			{
-				if (aparece_al_principio(ent, line[0]) == 0)
-					return ;
-				pos++;
+				if (aparece_al_principio(ent, line[0]) == 1)
+				{
+					printf("Primera fase superada: %s\n", ent->d_name);
+					pos++;
+					if (pos != (ft_strlen_matriz(line) - 1))
+					{
+						if (hay_barra(line[pos]) && barra == 0)
+						{
+							//conseguir nombre completo.
+							nombrecompleto = get_name(ruta, ent);
+							// llamar a la funcion de nuevo con otra ruta y el contador a 1?
+							funcion_wildcards(nombrecompleto, line, pos, 0);
+							//barra = 1
+							barra = 1;
+						}
+						else if (barra == 1)
+						{
+							aparece_en_medio_barra(ent, line[pos]);
+							//Hacer aparece_en_medio_barra()
+							//si se cumple condicion hacer recursividad obteniendo su nueva ruta y entrando en ella aumentando pos++;
+							//Si no se cumple seguir con el siguiente caso
+						}
+						else
+						{
+							//Posible while (pos != ft_strlen_matriz - 1)
+							//Comrpobar si no hay barra. 
+							//PROBLEMA: ¿pasar ruta desde la posicion actual del ent->d_name? problema luego al comprobar todo
+						}
+						solucion = aparece_en_medio(ent, line[pos]);
+						printf("Aparece en medio: %d y es %s\n", solucion, ent->d_name);
+					}
+					if (ent->d_type == 4)
+					{
+						nombrecompleto = get_name(ruta, ent);
+						funcion_wildcards(nombrecompleto, line, pos, 0);
+					}
+				}
+			pos = ancla;
 			}
-
 			nombrecompleto = get_name(ruta, ent);
 			/*if (ent->d_type != 4)
 			{
@@ -999,8 +1141,10 @@ char 	*gestion_wildcards(char *line)
 				while(line[i] != ' ' && line[i])
 					i++;
 				aster = new_split(ft_substr(line, ancla, i));
-				int j = 0;
-				funcion_wildcards("/", aster, 0);
+				if (aster[0][0] == '/')
+					funcion_wildcards("/", aster, 0, 0);
+				else
+					funcion_wildcards(".", aster, 0, 0);
 				//more_wildcards(line, i, num_ast);
 			}
 		}
@@ -1037,7 +1181,7 @@ int main(int argc, char **argv, char **env)
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
 
-	gestion_wildcards("s*cs*a de pedro es*s");
+	gestion_wildcards("s*c/s*a de pedro es*s");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
