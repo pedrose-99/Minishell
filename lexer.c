@@ -1016,7 +1016,6 @@ int aparece_en_medio(struct dirent *ent, char *line)
 		}
 	}
 	return(0);
-
 }
 
 int 	hay_barra(char *line)
@@ -1033,15 +1032,85 @@ int 	hay_barra(char *line)
 	return (0);
 }
 
-void	funcion_wildcards(char *ruta, char **line, int pos, int barra)// añadir t_list **list
+
+
+int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
+{
+	int i;
+	int ancla;
+
+	i = 0;
+	while (ruta[cont] && line[i])
+	{
+		if (ruta[cont] != line[i])
+			cont++;
+		else
+		{
+			ancla = cont + 1;
+			while (line[i] == ruta[cont])
+			{
+				i++;
+				cont++;
+			}
+			if (line[i] != '\0' && ruta[cont] != '\0')
+			{
+				i = 0;
+				cont = ancla;
+			}
+			else if (ruta[cont] == '\0' && line[i] != '\0')
+				return (0);
+			else if (ruta[cont] != '\0' && line[i] == '\0')
+			{
+				return (cont);
+			}
+			else
+				return (-1);
+		}
+	}
+	return (1);
+}
+int aparece_al_final(char *ruta, char *line, int ancla)
+{
+	int i;
+	int j;
+
+	i = 0;
+	j = 0;
+	while (ruta[i])
+		i++;
+	i--;
+	while (line[j])
+		j++;
+	j--;
+	while(j >= 0)
+	{
+		if (ruta[i] == line[j])
+		{
+			i--;
+			j--;
+		}
+		else
+		{
+			return (0);
+		}
+	}
+	i++;
+	if (ancla > i)
+		return (0);
+	return (1);
+}
+
+// Funcion si no hay barras, es decir no hay que acceder a directorios.
+void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_list **list
 {
 	DIR *dir;
 	struct dirent *ent;
 	char *nombrecompleto;
-	int solucion;
-	int ancla;
+	int cont;
+	int i;
 
-	solucion = 0;
+	cont = 0;
+	i = 0;
 	dir = opendir(ruta);
 	if (dir == NULL)
 	{
@@ -1049,66 +1118,100 @@ void	funcion_wildcards(char *ruta, char **line, int pos, int barra)// añadir t_
 		return ;
 	}
 	printf("%s\n\n", ruta);
-	ancla = pos;
+	while ((ent = readdir (dir)) != NULL)
+	{
+		cont = 0;
+		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
+		{
+			//Posible while (pos != ft_strlen_matriz - 1)
+			if (aparece_al_principio(ent, line[0]) == 1)
+			{
+				printf("Primera fase superada: %s\n", ent->d_name);
+				pos++;
+				if (line[0][0] != '*')
+				{
+					while(line[0][cont])
+						cont++;
+				}
+				while (pos != (ft_strlen_matriz(line) - 1) && cont != -42)
+				{
+					cont = funcion_hay_algo_enmedio(ent->d_name, line[pos], cont);
+					pos++;
+					if (cont == -1)
+					{
+						if (pos == (ft_strlen_matriz(line) - 1))
+						{
+							if (line[pos][0] == '*')
+							{
+								printf("Este si vale de momento\n");
+								printf("%s\n", ent->d_name);
+							}
+							else
+							{
+								printf("No vale ya que ha llegado al final en ent->d_name\n");
+								cont = -42;
+							}
+						}
+					}
+					if (cont == 0)
+					{
+						printf("Hemos llegado al final de ent->d_name y no corresponde\n");
+						cont = -42;
+					}
+				}
+				if (cont != -42)
+				{
+					if (aparece_al_final(ent->d_name, line[pos], cont))
+					{
+						printf("Si cumple las condiciones: \n%s\n", ent->d_name);
+					}
+					else
+					{
+						printf("No cumple la ultima condicion\n");
+					}
+				}
+			}
+		}
+		pos = 0;
+	}
+}
+
+void	funcion_wildcards_conbarra(char *ruta, char **line, int ancla_barras, int num_barras)
+{
+	DIR *dir;
+	struct dirent *ent;
+	char *nombrecompleto;
+	int i;
+	i = 0;
+	dir = opendir(ruta);
+	if (dir == NULL)
+	{
+		printf("Por aqui no paso");
+		return ;
+	}
+	printf("%s\n\n", ruta);
 	while ((ent = readdir (dir)) != NULL)
 	{
 		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
 		{
-			//Posible while (pos != ft_strlen_matriz - 1)
-			if (pos == 0)
+			if (num_barras != 0)
 			{
-				if (aparece_al_principio(ent, line[0]) == 1)
+				if (ent->d_type == 4)
 				{
-					printf("Primera fase superada: %s\n", ent->d_name);
-					pos++;
-					if (pos != (ft_strlen_matriz(line) - 1))
-					{
-						if (hay_barra(line[pos]) && barra == 0)
-						{
-							//conseguir nombre completo.
-							nombrecompleto = get_name(ruta, ent);
-							// llamar a la funcion de nuevo con otra ruta y el contador a 1?
-							funcion_wildcards(nombrecompleto, line, pos, 0);
-							//barra = 1
-							barra = 1;
-						}
-						else if (barra == 1)
-						{
-							aparece_en_medio_barra(ent, line[pos]);
-							//Hacer aparece_en_medio_barra()
-							//si se cumple condicion hacer recursividad obteniendo su nueva ruta y entrando en ella aumentando pos++;
-							//Si no se cumple seguir con el siguiente caso
-						}
-						else
-						{
-							//Posible while (pos != ft_strlen_matriz - 1)
-							//Comrpobar si no hay barra. 
-							//PROBLEMA: ¿pasar ruta desde la posicion actual del ent->d_name? problema luego al comprobar todo
-						}
-						solucion = aparece_en_medio(ent, line[pos]);
-						printf("Aparece en medio: %d y es %s\n", solucion, ent->d_name);
-					}
-					if (ent->d_type == 4)
-					{
-						nombrecompleto = get_name(ruta, ent);
-						funcion_wildcards(nombrecompleto, line, pos, 0);
-					}
+					num_barras--;
+					nombrecompleto = get_name(ruta, ent);
+					funcion_wildcards_conbarra(nombrecompleto,line, ancla_barras, num_barras);
 				}
-			pos = ancla;
 			}
-			nombrecompleto = get_name(ruta, ent);
-			/*if (ent->d_type != 4)
+			else
 			{
-		
-				//funcion_wildcards(nombrecompleto, &line[pos], list);
-			}*/
-
-			//si se cumple que existe:
-			//ft_list_add(list, new_nodo(nombrecompleto))
+				funcion_wildcards_sinbarra(nombrecompleto, line, 0);
+				num_barras = ancla_barras;
+				//Aqui supuestamente tenemos la nueva ruta con todas las barras. por ejemplo: Minishell/srcs.
+			}
 		}
 	}
 }
-
 
 // si dejo * es que esta mal y si no lo sustituyo
 char 	*gestion_wildcards(char *line)
@@ -1142,9 +1245,9 @@ char 	*gestion_wildcards(char *line)
 					i++;
 				aster = new_split(ft_substr(line, ancla, i));
 				if (aster[0][0] == '/')
-					funcion_wildcards("/", aster, 0, 0);
+					funcion_wildcards_sinbarra("/", aster, 0);
 				else
-					funcion_wildcards(".", aster, 0, 0);
+					funcion_wildcards_sinbarra(".", aster, 0);
 				//more_wildcards(line, i, num_ast);
 			}
 		}
@@ -1180,8 +1283,7 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-
-	gestion_wildcards("s*c/s*a de pedro es*s");
+	gestion_wildcards("p*r*b*.c hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
@@ -1255,3 +1357,105 @@ int main(int argc, char **argv, char **env)
 					str = ft_strjoin(str, " ");
 					printf("%s ", str);
 				}*/
+
+
+
+/*			if (pos == 0)
+			{
+				if (aparece_al_principio(ent, line[0]) == 1)
+				{
+					printf("Primera fase superada: %s\n", ent->d_name);
+					pos++;
+					if (pos != (ft_strlen_matriz(line) - 1))
+					{
+						if (hay_barra(line[pos]) && barra == 0)
+						{
+							//conseguir nombre completo.
+							nombrecompleto = get_name(ruta, ent);
+							// llamar a la funcion de nuevo con otra ruta y el contador a 1?
+							funcion_wildcards(nombrecompleto, line, pos, 0);
+							//barra = 1
+							barra = 1;
+						}
+						else if (barra == 1)
+						{
+							aparece_en_medio_barra(ent, line[pos]);
+							//Hacer aparece_en_medio_barra()
+							//si se cumple condicion hacer recursividad obteniendo su nueva ruta y entrando en ella aumentando pos++;
+							//Si no se cumple seguir con el siguiente caso
+						}
+						else
+						{
+							//Posible while (pos != ft_strlen_matriz - 1)
+							//Comrpobar si no hay barra. 
+							//PROBLEMA: ¿pasar ruta desde la posicion actual del ent->d_name? problema luego al comprobar todo
+						}
+						solucion = aparece_en_medio(ent, line[pos]);
+						printf("Aparece en medio: %d y es %s\n", solucion, ent->d_name);
+					}
+
+				if (ent->d_type == 4)
+				{
+					nombrecompleto = get_name(ruta, ent);
+					funcion_wildcards(nombrecompleto, line, pos, 0);
+				}
+
+
+
+
+void	funcion_wildcards(char *ruta, char **line, int pos, int barra)// añadir t_list **list
+{
+	DIR *dir;
+	struct dirent *ent;
+	char *nombrecompleto;
+	int cont;
+
+	cont = 0;
+	dir = opendir(ruta);
+	if (dir == NULL)
+	{
+		printf("Por aqui no paso");
+		return ;
+	}
+	printf("%s\n\n", ruta);
+	while ((ent = readdir (dir)) != NULL)
+	{
+		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
+		{
+			//Posible while (pos != ft_strlen_matriz - 1)
+			if (aparece_al_principio(ent, line[0]) == 1)
+			{
+				printf("Primera fase superada: %s\n", ent->d_name);
+				pos++;
+				if (pos != (ft_strlen_matriz(line) - 1))
+				{
+					else
+					{
+						//Posible while (pos != ft_strlen_matriz - 1)
+						//Comrpobar si no hay barra. 
+						//PROBLEMA: ¿pasar ruta desde la posicion actual del ent->d_name? problema luego al comprobar todo
+					}
+					solucion = aparece_en_medio(ent, line[pos]);
+					printf("Aparece en medio: %d y es %s\n", solucion, ent->d_name);
+				}
+				if (ent->d_type == 4)
+				{
+					nombrecompleto = get_name(ruta, ent);
+					funcion_wildcards(nombrecompleto, line, pos, 0);
+				}
+			}
+			pos = ancla;
+			}
+			nombrecompleto = get_name(ruta, ent);
+			if (ent->d_type != 4)
+			{
+		
+				//funcion_wildcards(nombrecompleto, &line[pos], list);
+
+
+			//si se cumple que existe:
+			//ft_list_add(list, new_nodo(nombrecompleto))
+		}
+	}
+}
+			}*/
