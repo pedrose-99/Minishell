@@ -921,7 +921,7 @@ char *get_name(char *ruta, struct dirent *ent)
 	return nombrecompleto;
 }
 
-int	aparece_al_principio(struct dirent *ent, char *line)
+int	aparece_al_principio(char *ruta, char *line)
 {
 	int i;
 	int j;
@@ -930,9 +930,9 @@ int	aparece_al_principio(struct dirent *ent, char *line)
 	j = 0;
 	if (line[0] == '*')
 		return (1);
-	while(line[j] && ent->d_name[i])
+	while(line[j] && ruta[i])
 	{
-		if (ent->d_name[i] == line[j])
+		if (ruta[i] == line[j])
 		{
 			i++;
 			j++;
@@ -1046,30 +1046,40 @@ int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 			cont++;
 		else
 		{
+		//	printf("contador before se joda todo %d\n", cont);
 			ancla = cont + 1;
-			while (line[i] == ruta[cont])
+			while (line[i] == ruta[cont] && line[i] && ruta[cont])
 			{
 				i++;
 				cont++;
+	//			printf("linea : %c\n", line[i]);
+	//			printf("ruta : %c\n", ruta[cont]);
 			}
+			//printf("I despues del bucle %d\n", i);
+	//		printf("cont despues del bucle %d\n", cont);
 			if (line[i] != '\0' && ruta[cont] != '\0')
 			{
 				i = 0;
 				cont = ancla;
 			}
 			else if (ruta[cont] == '\0' && line[i] != '\0')
+			{
 				return (0);
+			}
 			else if (ruta[cont] != '\0' && line[i] == '\0')
 			{
+	//			printf("CONTADOR = %d, LINEA = %d\n", cont, i);
 				return (cont);
 			}
-			else
+			else // Si los dos llegan al final y se han encontrado returneas -1.
+			{
 				return (-1);
+			}
 		}
 	}
-	return (1);
+	return (0);
 }
-int aparece_al_final(char *ruta, char *line, int ancla)
+int aparece_al_final(char *ruta, char *line, int ancla, struct dirent *ent)
 {
 	int i;
 	int j;
@@ -1082,6 +1092,9 @@ int aparece_al_final(char *ruta, char *line, int ancla)
 	while (line[j])
 		j++;
 	j--;
+	if (line[j] == '/' && ent->d_type == 4)
+		ruta = ft_strjoin(ruta, "/");
+	printf("L RUTA %s\n", ruta);
 	while(j >= 0)
 	{
 		if (ruta[i] == line[j])
@@ -1097,6 +1110,7 @@ int aparece_al_final(char *ruta, char *line, int ancla)
 	i++;
 	if (ancla > i)
 		return (0);
+	printf("Returnea 1");
 	return (1);
 }
 
@@ -1114,19 +1128,16 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 	dir = opendir(ruta);
 	if (dir == NULL)
 	{
-		printf("Por aqui no paso");
 		return ;
 	}
-	printf("%s\n\n", ruta);
 	while ((ent = readdir (dir)) != NULL)
 	{
 		cont = 0;
 		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
 		{
 			//Posible while (pos != ft_strlen_matriz - 1)
-			if (aparece_al_principio(ent, line[0]) == 1)
+			if (aparece_al_principio(ent->d_name, line[0]) == 1)
 			{
-				printf("Primera fase superada: %s\n", ent->d_name);
 				pos++;
 				if (line[0][0] != '*')
 				{
@@ -1136,6 +1147,7 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 				while (pos != (ft_strlen_matriz(line) - 1) && cont != -42)
 				{
 					cont = funcion_hay_algo_enmedio(ent->d_name, line[pos], cont);
+					//printf("Contador en sin barra: %d\n", cont);
 					pos++;
 					if (cont == -1)
 					{
@@ -1143,31 +1155,37 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 						{
 							if (line[pos][0] == '*')
 							{
-								printf("Este si vale de momento\n");
 								printf("%s\n", ent->d_name);
+								cont = -42;
 							}
 							else
 							{
-								printf("No vale ya que ha llegado al final en ent->d_name\n");
 								cont = -42;
 							}
 						}
 					}
 					if (cont == 0)
 					{
-						printf("Hemos llegado al final de ent->d_name y no corresponde\n");
 						cont = -42;
 					}
 				}
 				if (cont != -42)
 				{
-					if (aparece_al_final(ent->d_name, line[pos], cont))
+					if (line[pos][0] == '*')
 					{
-						printf("Si cumple las condiciones: \n%s\n", ent->d_name);
+						printf("%s\n", ent->d_name);
 					}
 					else
 					{
-						printf("No cumple la ultima condicion\n");
+						printf("WEPA\n");
+						if (aparece_al_final(ent->d_name, line[pos], cont, ent))
+						{
+							printf("\n%s\n", ent->d_name);
+						}
+						else
+						{
+							printf("No cumple la ultima condicion\n");
+						}
 					}
 				}
 			}
@@ -1176,7 +1194,82 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 	}
 }
 
-void	funcion_wildcards_conbarra(char *ruta, char **line, int ancla_barras, int num_barras)
+void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir t_list **list
+{
+	DIR *dir;
+	struct dirent *ent;
+	char *nombrecompleto;
+	int cont;
+	int i;
+
+	cont = 0;
+	i = 0;
+	dir = opendir(ruta);
+	if (dir == NULL)
+	{
+		return ;
+	}
+	while ((ent = readdir (dir)) != NULL)
+	{
+		cont = 0;
+		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
+		{
+			nombrecompleto = get_name(ruta, ent);
+			if (aparece_al_principio(nombrecompleto, line[0]) == 1)
+			{
+				pos++;
+				if (line[0][0] != '*')
+				{
+					while(line[0][cont])
+						cont++;
+				}
+				while (pos != (ft_strlen_matriz(line) - 1) && cont != -42)
+				{
+					cont = funcion_hay_algo_enmedio(nombrecompleto, line[pos], cont);
+					pos++;
+					if (cont == -1)
+					{
+						if (pos == (ft_strlen_matriz(line) - 1))
+						{
+							if (line[pos][0] == '*')
+							{
+								//printf("%s\n", ent->d_name);
+								cont = -42;
+							}
+							else
+							{
+								cont = -42;
+							}
+						}
+					}
+					if (cont == 0)
+					{
+						cont = -42;
+					}
+				}
+				if (cont != -42)
+				{
+					if (line[pos][0] == '*')
+						printf("%s\n", nombrecompleto);
+					else
+					{
+						if (aparece_al_final(nombrecompleto, line[pos], cont, ent))
+						{
+							printf("Si cumple las condiciones: \n%s\n", ent->d_name);
+						}
+						else
+						{
+							printf("\n");
+						}
+					}
+				}
+			}
+		}
+		pos = 0;
+	}
+}
+
+void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 {
 	DIR *dir;
 	struct dirent *ent;
@@ -1186,31 +1279,41 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int ancla_barras, int n
 	dir = opendir(ruta);
 	if (dir == NULL)
 	{
-		printf("Por aqui no paso");
 		return ;
 	}
-	printf("%s\n\n", ruta);
 	while ((ent = readdir (dir)) != NULL)
 	{
 		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
 		{
-			if (num_barras != 0)
+			if (num_barras > 0)
 			{
 				if (ent->d_type == 4)
 				{
-					num_barras--;
 					nombrecompleto = get_name(ruta, ent);
-					funcion_wildcards_conbarra(nombrecompleto,line, ancla_barras, num_barras);
+					funcion_wildcards_conbarra(nombrecompleto, line, num_barras - 1);
 				}
 			}
 			else
 			{
-				funcion_wildcards_sinbarra(nombrecompleto, line, 0);
-				num_barras = ancla_barras;
+				funcion_wildcards_sinbarra_dps(ruta, line, 0);
+				return ;
 				//Aqui supuestamente tenemos la nueva ruta con todas las barras. por ejemplo: Minishell/srcs.
 			}
 		}
 	}
+}
+int	cont_barras(char *line, int i)
+{
+	int barras;
+
+	barras = 0;
+	while (line[i] != ' ' && line[i])
+	{
+		if (line[i] == '/')
+			barras++;
+		i++;
+	}
+	return (barras);
 }
 
 // si dejo * es que esta mal y si no lo sustituyo
@@ -1244,10 +1347,27 @@ char 	*gestion_wildcards(char *line)
 				while(line[i] != ' ' && line[i])
 					i++;
 				aster = new_split(ft_substr(line, ancla, i));
-				if (aster[0][0] == '/')
-					funcion_wildcards_sinbarra("/", aster, 0);
+				if (cont_barras(line, ancla) == 0)
+				{
+					if (aster[0][0] == '/')
+						funcion_wildcards_sinbarra("/", aster, 0);
+					else
+					{
+						funcion_wildcards_sinbarra(".", aster, 0);
+					}
+				}
 				else
-					funcion_wildcards_sinbarra(".", aster, 0);
+				{
+					if (aster[0][0] == '/')
+					{
+						funcion_wildcards_conbarra("/", aster, cont_barras(line, ancla));
+					}
+					else
+					{
+						printf("El numero de barras es de %d\n", cont_barras(line, ancla));
+						funcion_wildcards_conbarra(".", aster, cont_barras(line, ancla));
+					}
+				}
 				//more_wildcards(line, i, num_ast);
 			}
 		}
@@ -1283,7 +1403,7 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("p*r*b*.c hahahsg");
+	gestion_wildcards("s*r*/ hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
