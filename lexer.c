@@ -1402,7 +1402,7 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("s*r*/*/ hahahsg");
+	gestion_wildcards("s*r*/* hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
