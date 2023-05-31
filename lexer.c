@@ -1092,9 +1092,8 @@ int aparece_al_final(char *ruta, char *line, int ancla, struct dirent *ent)
 	while (line[j])
 		j++;
 	j--;
-	if (line[j] == '/' && ent->d_type == 4)
-		ruta = ft_strjoin(ruta, "/");
-	printf("L RUTA %s\n", ruta);
+	if (line[j] == '/')
+		return (-1);
 	while(j >= 0)
 	{
 		if (ruta[i] == line[j])
@@ -1177,14 +1176,13 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 					}
 					else
 					{
-						printf("WEPA\n");
-						if (aparece_al_final(ent->d_name, line[pos], cont, ent))
+						if (aparece_al_final(ent->d_name, line[pos], cont, ent) == 1)
 						{
 							printf("\n%s\n", ent->d_name);
 						}
-						else
+						else if (aparece_al_final(ent->d_name, line[pos], cont, ent) == -1)
 						{
-							printf("No cumple la ultima condicion\n");
+							printf("%s\n", ruta);
 						}
 					}
 				}
@@ -1253,13 +1251,15 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 						printf("%s\n", nombrecompleto);
 					else
 					{
-						if (aparece_al_final(nombrecompleto, line[pos], cont, ent))
+						if (aparece_al_final(nombrecompleto, line[pos], cont, ent) == 1)
 						{
-							printf("Si cumple las condiciones: \n%s\n", ent->d_name);
+							printf("Si cumple las condiciones: \n%s\n", nombrecompleto);
 						}
-						else
+						else if (aparece_al_final(ent->d_name, line[pos], cont, ent) == -1)
 						{
-							printf("\n");
+							ruta = ft_strjoin(ruta, "/");
+							printf("%s\n", ruta);
+							return ;
 						}
 					}
 				}
@@ -1364,7 +1364,6 @@ char 	*gestion_wildcards(char *line)
 					}
 					else
 					{
-						printf("El numero de barras es de %d\n", cont_barras(line, ancla));
 						funcion_wildcards_conbarra(".", aster, cont_barras(line, ancla));
 					}
 				}
@@ -1403,7 +1402,7 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("s*r*/ hahahsg");
+	gestion_wildcards("s*r*/*/ hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
