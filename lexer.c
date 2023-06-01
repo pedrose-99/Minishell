@@ -680,7 +680,7 @@ char *case_word_bef_aft(char *word_before, char *word_after, structr dirent *ent
 			return (NULL);
 		else
 		{
-
+			return (case_word_after(word_after, ent->d_name, ent));
 		}
 	}
 	else
