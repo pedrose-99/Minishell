@@ -9,10 +9,6 @@ typedef struct s_parser
 
 }				t_parser;
 
-
-
-// SI *S* busca todas las palabras que contengan S
-
 char	**make_array_wildcard(char *s)
 {
 	char	**array_2d;
@@ -571,7 +567,6 @@ char *case_director(char *word_after, char *word_before, char *name, struct dire
 	size --;
 	while (word_after[j])
 		j++;
-	//printf("%d%s\n", ent->d_type, name);
 	j--;
 	j--;
 	if (word_before)
@@ -582,7 +577,6 @@ char *case_director(char *word_after, char *word_before, char *name, struct dire
 		}
 		else
 		{
-			printf("HOLO");
 			str = getcwd(str, 100);
 			str = ft_strjoin(str, "/");
 			str = ft_strjoin(str, name);
@@ -608,14 +602,104 @@ char *case_director(char *word_after, char *word_before, char *name, struct dire
 	return (name);
 }
 
-char *case_word_before_after(char *word_before, char *word_after, struct dirent *ent, char *str)
+	/*if (aparece_al_principio(ent->d_name, word_before) == 0)
+		return (NULL);*/
+	
+int	aparece_al_principio_version_aster(char *ruta, char *word_before)
 {
 	int i;
+	int j;
+
+	i = 0;
+	j = 0;
+	if (word_before[j] == '/')
+		j++;
+	// Falta añadir a str el
+	while(word_before[j] && ruta[i])
+	{
+		if (ruta[i] == word_before[j])
+		{
+			i++;
+			j++;
+		}
+		else
+			return (0);
+	}
+	return (1);
+}
+
+int aparece_al_final_version_aster(char *ruta, char *line, int ancla)
+{
+	int i;
+	int j;
+
+	i = 0;
+	j = 0;
+	while (ruta[i])
+		i++;
+	i--;
+	while (line[j])
+		j++;
+	j--;
+	if (line[j] == '/')
+		return (-1);
+	while(j >= 0)
+	{
+		if (ruta[i] == line[j])
+		{
+			i--;
+			j--;
+		}
+		else
+			return (0);
+	}
+	i++;
+	if (ancla > i)
+		return (0);
+	return (1);
+}
+
+char *case_word_bef_aft(char *word_before, char *word_after, structr dirent *ent, char *str)
+{
+	int size_word_a;
+	int size_word_b;
+	int size;
+
+	size_word_a = 0;
+	size_word_b = 0;
+	size = 0;
+	if (case_word_before(word_before, ent->d_name, ent) != NULL && case_word_after(word_after, ent->d_name, ent) != NULL)
+	{
+		while (word_before[size_word_b])
+			size_word_b++;
+		while (word_after[size_word_a])
+			size_word_a++;
+		while (ent->d_name[size])
+			size++;
+		if ((size - size_word_a - size_word_b) < 0)
+			return (NULL);
+		else
+		{
+
+		}
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+
+
+
+char *case_word_before_after(char *word_before, char *word_after, structr dirent *ent, char *str)
+{
+	int ancla;
 	int j;
 	int size;
 	int aux;
 	
-	i = 0;
+	ancla = 0;
 	j = 0;
 	aux = 0;
 	size = check_size(word_before, word_after, ent->d_name);
@@ -623,19 +707,16 @@ char *case_word_before_after(char *word_before, char *word_after, struct dirent 
 		return (NULL);
 	str = (char*)malloc(sizeof(char)*(2));
 	if (!str)
-		return(NULL);
-	if (word_before[aux] == '/')
-	{
-		aux++;
-		str[0] = '/';
-	}
-	while (word_before[aux])
-	{
-		if (word_before[aux] != ent->d_name[i])
-			return (NULL);
-		i++;
-		aux++;
-	}
+		return (NULL);
+	if (aparece_al_principio_version_aster(ent->d_name, word_before) == 0)
+		return (NULL);
+	while (word_before[ancla])
+		ancla++;
+	ancla--;
+
+
+
+
 	while (word_after[j])
 		j++;
 	j--;
@@ -646,20 +727,23 @@ char *case_word_before_after(char *word_before, char *word_after, struct dirent 
 			return (NULL);
 		return (str);
 	}
-	while (word_after[j] && size >= i)
+	//while (word_after[j] && size >= i)
+	while (j >= 0 && size > i)
 	{
 		if (word_after[j] != ent->d_name[size])
 			return (NULL);
 		j--;
 		size--;
 	}
+	size++;
+	if (size <= i)
+		return (NULL);
 	if (ent->d_name[i] == '.')
 		return (NULL);
 	// hacer caso srcs*s ---> te tiene que dar mal
 	str = ft_strjoin(str, ent->d_name);
 	return (str);
 }
-
 
 char *case_word_before(char *word_before, char *name, struct dirent *ent)
 {
@@ -758,7 +842,6 @@ void change_wildcards(char *word_before, char *word_after, char *line, int i)
 	else
 		dir = opendir(".");
 	str = NULL;
-	// Si pones opendir("./NOMbredirectorio entra en el")
 	if (dir == NULL)
 		printf("no se puede abrir directorio");
 	while ((ent = readdir(dir)) != NULL)
@@ -807,7 +890,6 @@ char	*get_word_after_m(char *line, int i)
 	str[aux] = '\0';
 	return (str);
 }
-
 
 char *genera_pos_str(int niv)
 {
@@ -859,34 +941,6 @@ unsigned cuenta_archivos(char *ruta, int niv)
 }
 
 
-void	more_wildcards(char *line, int i, int num_ast)
-{
-	DIR *dir;
-	struct dirent *ent;
-	char *word_before;
-	char *word_after;
-	char *path;
-	char *str;
-
-	word_before = get_word_before(line, i);
-	word_after = get_word_after_m(line, i);
-	if (!word_before)
-		dir = opendir(".");
-	else if (word_before[0] == '/')
-		dir = opendir("/");
-	else
-		dir = opendir(".");
-	while ((ent = readdir(dir)) != NULL)
-	{
-		if (ent->d_type == 4)
-		{
-			//dir = opendir(ent->d_name);
-			printf("%s ", ent->d_name);
-		}
-	}
-	i++;
-}
-
 int ft_strlen_matriz(char **line)
 {
 	int i;
@@ -898,7 +952,6 @@ int ft_strlen_matriz(char **line)
 	}
 	return (i);
 }
-
 
 char *get_name(char *ruta, struct dirent *ent)
 {
@@ -943,6 +996,8 @@ int	aparece_al_principio(char *ruta, char *line)
 	return (1);
 }
 
+
+
 int aparece_en_medio_barra(struct dirent *ent, char *line)
 {
 	int i;
@@ -959,8 +1014,6 @@ int aparece_en_medio_barra(struct dirent *ent, char *line)
 	ancla = j;
 	while (line[j] && ent->d_name[i])
 	{
-		//Posiblemente comprobar directamente todo. 
-		//comprobar la ruta completa directamente
 		if (line[j] == ent->d_name[i])
 		{
 			i++;
@@ -976,9 +1029,7 @@ int aparece_en_medio_barra(struct dirent *ent, char *line)
 			}
 		}
 		if (line[j] == '/')
-		{
 			return (1);
-		}
 	}
 	return (0);
 	
@@ -1031,8 +1082,6 @@ int 	hay_barra(char *line)
 	}
 	return (0);
 }
-
-
 
 int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 {
@@ -1332,11 +1381,8 @@ char 	*gestion_wildcards(char *line)
 		{
 			if (check_num_asteriscos(line, i) == 1)
 			{
-				printf("\nENTRA AQUI\n");
 				word_after = get_word_after(line, i);
 				word_before = get_word_before(line, i);
-				printf("word before = %s\n", word_before);
-				printf("word after = %s\n", word_after);
 				change_wildcards(word_before, word_after, line, i);
 			}
 			else
@@ -1352,22 +1398,15 @@ char 	*gestion_wildcards(char *line)
 					if (aster[0][0] == '/')
 						funcion_wildcards_sinbarra("/", aster, 0);
 					else
-					{
 						funcion_wildcards_sinbarra(".", aster, 0);
-					}
 				}
 				else
 				{
 					if (aster[0][0] == '/')
-					{
 						funcion_wildcards_conbarra("/", aster, cont_barras(line, ancla));
-					}
 					else
-					{
 						funcion_wildcards_conbarra(".", aster, cont_barras(line, ancla));
-					}
 				}
-				//more_wildcards(line, i, num_ast);
 			}
 		}
 		i++;
@@ -1402,7 +1441,7 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("s*r*/* hahahsg");
+	gestion_wildcards("*c hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
