@@ -673,7 +673,8 @@ char *case_director(char *word_after, char *word_before, char *name, struct dire
 }
 
 //Arreglar
-char *case_word_before_after(char *word_before, char *word_after, struct dirent *ent, char *str)
+char *case_word_before_after(char *word_before, char *word_after,
+	struct dirent *ent, char *str)
 {
 	int		i;
 	int		j;
@@ -914,29 +915,40 @@ int	aparece_al_principio(char *ruta, char *line)
 	}
 	return (1);
 }
-//Arreglar
-condition_check_caract
+
+int		incrementar_aparece_en_medio(char *line)
+{
+	int	i;
+
+	while (line[i])
+		i++;
+	return (i);
+}
+
+int		avanzar_aparece_en_medio(char *line)
+{
+	int	j;
+
+	j = 0;
+	while (line[j] != '/')
+		j++;
+	j--;
+	return (j);
+}
+
 int aparece_en_medio_barra(struct dirent *ent, char *line)
 {
 	int	i;
 	int	j;
 	int	ancla;
 
-	i = 0;
-	j = 0;
-	while (ent->d_name[i])
-		i++;
-	while (line[j] != '/')
-		j++;
-	j--;
+	i = incrementar_aparece_en_medio(ent->d_name);
+	j = avanzar_aparece_en_medio(line);
 	ancla = j;
 	while (line[j] && ent->d_name[i])
 	{
-		if (line[j] == ent->d_name[i])
-		{
-			i++;
+		if (line[j] == ent->d_name[i++])
 			j++;
-		}
 		else
 		{
 			j = ancla;
@@ -961,17 +973,14 @@ int aparece_en_medio(struct dirent *ent, char *line)
 	j = 0;
 	while (line[j])
 	{
-		if (line[j] == '/')
+		if (line[j++] == '/')
 			return (aparece_en_medio_barra(ent, line));
-		j++;
 	}
 	j = 0;
 	while (line[j] && ent->d_name[i])
 	{
-		if (line[j] == ent->d_name[i])
+		if (line[j++] == ent->d_name[i++])
 		{
-			j++;
-			i++;
 			if (line[j] == '\0')
 				return (1);
 		}
@@ -998,7 +1007,7 @@ int	hay_barra(char *line)
 	return (0);
 }
 
-//Arreglar
+//Arreglar (No se como)
 int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 {
 	int		i;
@@ -1012,11 +1021,8 @@ int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 		else
 		{
 			ancla = cont + 1;
-			while (line[i] == ruta[cont] && line[i] && ruta[cont])
-			{
-				i++;
+			while (line[i] == ruta[cont] && line[i++] && ruta[cont++])
 				cont++;
-			}
 			if (line[i] != '\0' && ruta[cont] != '\0')
 			{
 				i = 0;
@@ -1073,7 +1079,7 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 	if (dir == NULL)
 		return ;
 	ent = readdir (dir);
-	while ((ent = readdir (dir)) != NULL)
+	while (ent != NULL)
 	{
 		cont = 0;
 		if ((ft_strcmp(ent->d_name, ".") != 0)
@@ -1120,11 +1126,13 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 					}
 					else
 					{
-						if (aparece_al_final(ent->d_name, line[pos], cont, ent) == 1)
+						if (aparece_al_final(ent->d_name,
+								line[pos], cont, ent) == 1)
 						{
 							printf("\n%s\n", ent->d_name);
 						}
-						else if (aparece_al_final(ent->d_name, line[pos], cont, ent) == -1)
+						else if (aparece_al_final(ent->d_name,
+								line[pos], cont, ent) == -1)
 						{
 							printf("%s\n", ruta);
 						}
@@ -1139,11 +1147,12 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 //Arreglar
 void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir t_list **list
 {
-	DIR *dir;
-	struct dirent *ent;
-	char *nombrecompleto;
-	int cont;
-	int i;
+	DIR				*dir;
+	struct dirent	*ent;
+	char			*nombrecompleto;
+	int				cont;
+	int				i;
+
 	cont = 0;
 	i = 0;
 	dir = opendir(ruta);
@@ -1151,10 +1160,12 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 	{
 		return ;
 	}
-	while ((ent = readdir (dir)) != NULL)
+	ent = readdir (dir);
+	while (ent != NULL)
 	{
 		cont = 0;
-		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
+		if ((ft_strcmp(ent->d_name, ".") != 0)
+			&& (ft_strcmp(ent->d_name, "..") != 0))
 		{
 			nombrecompleto = get_name(ruta, ent);
 			if (aparece_al_principio(nombrecompleto, line[0]) == 1)
@@ -1162,12 +1173,13 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 				pos++;
 				if (line[0][0] != '*')
 				{
-					while(line[0][cont])
+					while (line[0][cont])
 						cont++;
 				}
 				while (pos != (ft_strlen_matriz(line) - 1) && cont != -42)
 				{
-					cont = funcion_hay_algo_enmedio(nombrecompleto, line[pos], cont);
+					cont = funcion_hay_algo_enmedio(nombrecompleto,
+							line[pos], cont);
 					pos++;
 					if (cont == -1)
 					{
@@ -1179,15 +1191,11 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 								cont = -42;
 							}
 							else
-							{
 								cont = -42;
-							}
 						}
 					}
 					if (cont == 0)
-					{
 						cont = -42;
-					}
 				}
 				if (cont != -42)
 				{
@@ -1195,11 +1203,11 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 						printf("%s\n", nombrecompleto);
 					else
 					{
-						if (aparece_al_final(nombrecompleto, line[pos], cont, ent) == 1)
-						{
+						if (aparece_al_final(nombrecompleto, line[pos],
+								cont, ent) == 1)
 							printf("Si cumple las condiciones: \n%s\n", nombrecompleto);
-						}
-						else if (aparece_al_final(ent->d_name, line[pos], cont, ent) == -1)
+						else if (aparece_al_final(ent->d_name,
+								line[pos], cont, ent) == -1)
 						{
 							ruta = ft_strjoin(ruta, "/");
 							printf("%s\n", ruta);
@@ -1216,24 +1224,28 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 //Arreglar
 void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 {
-	DIR *dir;
-	struct dirent *ent;
-	char *nombrecompleto;
-	int i;
+	DIR				*dir;
+	struct dirent	*ent;
+	char			*nombrecompleto;
+	int				i;
+
 	i = 0;
 	dir = opendir(ruta);
 	if (dir == NULL)
 		return ;
-	while ((ent = readdir (dir)) != NULL)
+	ent = readdir (dir);
+	while (ent != NULL)
 	{
-		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
+		if ((ft_strcmp(ent->d_name, ".") != 0)
+			&& (ft_strcmp(ent->d_name, "..") != 0))
 		{
 			if (num_barras > 0)
 			{
 				if (ent->d_type == 4)
 				{
 					nombrecompleto = get_name(ruta, ent);
-					funcion_wildcards_conbarra(nombrecompleto, line, num_barras - 1);
+					funcion_wildcards_conbarra(nombrecompleto,
+						line, num_barras - 1);
 				}
 			}
 			else
@@ -1247,7 +1259,8 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 }
 int	cont_barras(char *line, int i)
 {
-	int barras;
+	int		barras;
+
 	barras = 0;
 	while (line[i] != ' ' && line[i])
 	{
@@ -1261,13 +1274,14 @@ int	cont_barras(char *line, int i)
 //Arreglar
 char 	*gestion_wildcards(char *line)
 {
-	int i;
-	int ancla;
-	char *word_before;
-	char *word_after;
-	char **aster;
+	int		i;
+	int		ancla;
+	char	*word_before;
+	char	*word_after;
+	char	**aster;
+
 	i = 0;
-	while(line[i])
+	while (line[i])
 	{
 		if (line[i] == '*')
 		{
@@ -1285,7 +1299,7 @@ char 	*gestion_wildcards(char *line)
 				while (i > 0 && line[i] != ' ')
 					i--;
 				ancla = i;
-				while(line[i] != ' ' && line[i])
+				while (line[i] != ' ' && line[i])
 					i++;
 				aster = new_split(ft_substr(line, ancla, i));
 				if (cont_barras(line, ancla) == 0)
@@ -1301,11 +1315,13 @@ char 	*gestion_wildcards(char *line)
 				{
 					if (aster[0][0] == '/')
 					{
-						funcion_wildcards_conbarra("/", aster, cont_barras(line, ancla));
+						funcion_wildcards_conbarra("/", aster,
+							cont_barras(line, ancla));
 					}
 					else
 					{
-						funcion_wildcards_conbarra(".", aster, cont_barras(line, ancla));
+						funcion_wildcards_conbarra(".", aster,
+							cont_barras(line, ancla));
 					}
 				}
 			}
