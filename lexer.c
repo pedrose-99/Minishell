@@ -1,14 +1,12 @@
 #include "libft/libft.h"
 #include "includes/minishell.h"
 #include <stdio.h>
-
 typedef struct s_parser
 {
 	char 	*line; // Esta linea va a contener 
 	t_list *lexer; // Esta seria la tabla que contiene todos los datos del lexer // Numero de comandos
-
 }				t_parser;
-
+// SI *S* busca todas las palabras que contengan S
 char	**make_array_wildcard(char *s)
 {
 	char	**array_2d;
@@ -38,7 +36,7 @@ char	**make_array_wildcard(char *s)
 
 static void	free_array2d(char **array_2d, int j)
 {
-	int	i;
+	int		i;
 
 	i = 0;
 	while (i < j)
@@ -49,6 +47,38 @@ static void	free_array2d(char **array_2d, int j)
 	array_2d = NULL;
 }
 
+int	guardar_asterisco_principio(char **array_2d, char const *s, int i)
+{
+	int	j;
+
+	j = 0;
+	if (s[i] == '*')
+	{
+		array_2d[j] = ft_substr(s, 0, 1);
+		j++;
+	}
+	return (j);
+}
+
+void	guardar_asterisco_final(char **array_2d, char const *s, int i, int j)
+{
+	i--;
+	if (s[i] == '*')
+	{
+		array_2d[j] = ft_substr("*", 0, 1);
+		j++;
+	}
+	array_2d[j] = NULL;
+}
+
+int	incrementar_contador(char const *s, int i, int word_size)
+{
+	i = i + word_size;
+	while (s[i] == '*' && s[i])
+		i++;
+	return (i);
+}
+
 static void	fill_array_wildcard(char **array_2d, char const *s)
 {
 	int		i;
@@ -56,12 +86,7 @@ static void	fill_array_wildcard(char **array_2d, char const *s)
 	int		word_size;
 
 	i = 0;
-	j = 0;
-	if (s[i] == '*')
-	{
-		array_2d[j] = ft_substr(s, 0, 1);
-		j++;
-	}
+	j = guardar_asterisco_principio(array_2d, s, i);
 	while (s[i] == '*' && s[i])
 		i++;
 	while (s[i])
@@ -75,18 +100,10 @@ static void	fill_array_wildcard(char **array_2d, char const *s)
 			free_array2d(array_2d, j);
 			break ;
 		}
-		i = i + word_size;
 		j++;
-		while (s[i] == '*' && s[i])
-			i++;
+		i = incrementar_contador(s, i, word_size);
 	}
-	i--;
-	if (s[i] == '*')
-	{
-		array_2d[j] = ft_substr("*", 0, 1);
-		j++;
-	}
-	array_2d[j] = NULL;
+	guardar_asterisco_final(array_2d, s, i, j);
 }
 
 char **new_split(char *s)
@@ -106,17 +123,17 @@ char **new_split(char *s)
 
 int ft_strcmp(char *s1, char *s2)
 {
-	int i;
+	int	i;
 
 	i = 0;
-	while((s1[i] == s2[i]) && (s1[i] && s2[i]))
+	while ((s1[i] == s2[i]) && (s1[i] && s2[i]))
 		i++;
-	return((unsigned char)s1[i] - (unsigned char)s2[i]);
+	return ((unsigned char)s1[i] - (unsigned char)s2[i]);
 }
 
 char *ft_strcpy(char *s1, char *s2)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	while (s2[i])
@@ -136,12 +153,12 @@ void	init_parser(t_parser *parser)
 
 int condition_parentesis(char *line, int i)
 {
-	int aux_abierto;
-	int aux_cerrado;
+	int	aux_abierto;
+	int	aux_cerrado;
 
 	aux_abierto = 1;
 	aux_cerrado = 0;
-	while(aux_abierto != aux_cerrado)
+	while (aux_abierto != aux_cerrado)
 	{
 		if (line[i] == '(')
 			aux_abierto++;
@@ -155,90 +172,113 @@ int condition_parentesis(char *line, int i)
 
 int	saltar_espace(char *line, int i)
 {
-	while(line[i] == ' ' || line[i] == '\t')
+	while (line[i] == ' ' || line[i] == '\t')
 		i++;
-	return(i);
+	return (i);
 }
 
-int separar(t_parser *parser)
+int		condicion_parser_line(t_parser *parser, int ancla, int i)
 {
-	int i;
-	int ancla;
-	int parent;
+	if (ancla != i)
+		ft_lstadd_back(&parser->lexer,
+			ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
+	ancla = i;
+	if (parser->line[i] == parser->line[i + 1])
+	{
+		ft_lstadd_back(&parser->lexer,
+			ft_lstnew(ft_substr(parser->line, ancla, 2)));
+		i++;
+	}
+	else
+		ft_lstadd_back(&parser->lexer,
+			ft_lstnew(ft_substr(parser->line, ancla, 1)));
+	i++;
+	i = saltar_espace(parser->line, i);
+	return (i);
+}
+
+int 	condicion_parser_parent(t_parser *parser, int ancla, int i)
+{
+	if (ancla != i)
+		ft_lstadd_back(&parser->lexer,
+			ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
+	ancla = i;
+	i++;
+	ancla = i;
+	i = condition_parentesis(parser->line, i);
+	ft_lstadd_back(&parser->lexer,
+		ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
+	i++;
+	i = saltar_espace(parser->line, i);
+	return (i);
+}
+
+int 	separar(t_parser *parser)
+{
+	int		i;
+	int		ancla;
+	int		parent;
 
 	i = 0;
 	ancla = 0;
-	while(parser->line[i])
+	while (parser->line[i])
 	{
-		if(parser->line[i] == '|' || parser->line[i] == '>' || parser->line[i] == '<' || parser->line[i] == '&')
+		if (parser->line[i] == '|' || parser->line[i] == '>'
+			|| parser->line[i] == '<' || parser->line[i] == '&')
 		{
-			if(ancla != i)
-				ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
-			ancla = i;
-			if(parser->line[i] == parser->line[i + 1])
-			{
-				ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, 2)));
-				i++;
-			}
-			else
-				ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, 1)));
-			i++;
-			i = saltar_espace(parser->line, i);
+			i = condicion_parser_line(parser, ancla, i);
 			ancla = i;
 		}
 		else if (parser->line[i] == '(')
 		{
-			if(ancla != i)
-				ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
-			ancla = i;
-			i++;
-			ancla = i;
-			i = condition_parentesis(parser->line, i);
-			ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
-			i++;
-			i = saltar_espace(parser->line, i);
-			ancla = i;
-			i--;
+			i = condicion_parser_parent(parser, ancla, i);
+			ancla = i--;
 		}
 		i++;
 	}
 	if (parser->line[i] != ')')
-	{
-		ft_lstadd_back(&parser->lexer, ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
-	}
+		ft_lstadd_back(&parser->lexer,
+			ft_lstnew(ft_substr(parser->line, ancla, i - ancla)));
 	return (0);
+}
+
+
+int condicion_check_parent(char *line, int i)
+{
+	if (line[i] == '"')
+	{
+		i++;
+		while (line[i] != '"')
+			i++;
+	}
+	else if (line[i] == 39)
+	{
+		i++;
+		while (line[i] != 39)
+			i++;
+	}
+	return (i);
 }
 
 int		check_parentesis(char *line)
 {
-	int i;
-	int parentesis_abierto;
-	int parentesis_cerrado;
+	int		i;
+	int		parentesis_abierto;
+	int		parentesis_cerrado;
 
 	i = 0;
 	parentesis_abierto = 0;
 	parentesis_cerrado = 0;
-	while(line[i])
+	while (line[i])
 	{
-		if (line[i] == '"')
-		{
-			i++;
-			while(line[i] != '"')
-				i++;
-		}
-		else if (line[i] == 39)
-		{
-			i++;
-			while(line[i] != 39)
-				i++;
-		}
+		i = condicion_check_parent(line, i);
 		if (line[i] == '(')
 			parentesis_abierto++;
 		if (line[i] == ')')
 			parentesis_cerrado++;
 		i++;
 	}
-	i = parentesis_abierto - parentesis_cerrado;
+	i = (parentesis_abierto - parentesis_cerrado);
 	if (i == 0)
 		return (1);
 	else
@@ -247,14 +287,14 @@ int		check_parentesis(char *line)
 
 int 	check_comillas(char *line)
 {
-	int i;
-	int comillas_simples;
-	int comillas_dobles;
+	int		i;
+	int		comillas_simples;
+	int		comillas_dobles;
 
 	i = 0;
 	comillas_simples = 0;
 	comillas_dobles = 0;
-	while(line[i])
+	while (line[i])
 	{
 		if (line[i] == '"')
 			comillas_dobles++;
@@ -267,9 +307,16 @@ int 	check_comillas(char *line)
 	return (1);
 }
 
+int condition_check_caract(char *line, int i, char c)
+{
+	while (line[i] != c)
+		i++;
+	return (i);
+}
+
 int check_caract(char *line)
 {
-	int i;
+	int		i;
 
 	i = 0;
 	while (line[i])
@@ -277,14 +324,12 @@ int check_caract(char *line)
 		if (line[i] == 39)
 		{
 			i++;
-			while(line[i] != 39)
-				i++;
+			i = condition_check_caract(line, i, 39);
 		}
 		else if (line[i] == '"')
 		{
 			i++;
-			while(line[i] != '"')
-				i++;
+			i = condition_check_caract(line, i, '"');
 		}
 		else if (line[i] == ',' || line[i] == ';' || line[i] == 92)
 			return (0);
@@ -295,35 +340,30 @@ int check_caract(char *line)
 
 int		check_sintaxis(char *line)
 {
-	int check_paren;
-	int check_other_carac;
+	int		check_paren;
+	int		check_other_carac;
 
 	check_other_carac = 0;
 	if (check_comillas (line))
-	{
 		check_paren = check_parentesis(line);
-	}
 	else
 		return (0);
 	if (check_paren == 1)
-	{
 		check_other_carac = check_caract(line);
-	}
 	else
 		return (0);
 	if (check_other_carac)
-	{
 		return (1);
-	}
 	else
 		return (0);
 }
 
-void		handle_ctr_c_signal(t_parser *parser)
+void	handle_ctr_c_signal(t_parser *parser)
 {
 	free(parser->line);
 	parser->line = ft_strdup("");
-	ft_putstr_fd("^C\n", STDIN_FILENO); //Pasa el comando control c. Otra opcion podria ser hcaer kill al proceso
+	ft_putstr_fd("^C\n", STDIN_FILENO); 
+	//Pasa el comando control c. Otra opcion podria ser hcaer kill al proceso
 }
 
 char	**env_list_to_array(t_list *env_list)
@@ -333,11 +373,10 @@ char	**env_list_to_array(t_list *env_list)
 	int		i;
 
 	i = 0;
-	env_array = (char**)ft_calloc(
-	(ft_lstsize(env_list) + 1), sizeof(char*));
+	env_array = (char**)ft_calloc((ft_lstsize(env_list) + 1), sizeof(char*));
 	while (env_list)
 	{
-		content = (char*)env_list->content;
+		content = (char *)env_list->content;
 		env_array[i] = content;
 		env_list = env_list->next;
 		i++;
@@ -346,36 +385,41 @@ char	**env_list_to_array(t_list *env_list)
 	return (env_array);
 }
 
-char	*get_word(char *line, int i)
+char *condicion_get_word(char *str, char *line, int ancla, int i)
 {
-	char *str;
-	int ancla;
 	int aux;
 
-	i++;
 	aux = 0;
+	str = (char *)malloc(sizeof(char) * (i - ancla + 1));
+	if (!str)
+		return (NULL);
+	while (ancla < i)
+	{
+		str[aux] = line[ancla];
+		ancla++;
+		aux ++;
+	}
+	if (line[i + 1] == '\0')
+	{
+		str[aux] = line[ancla];
+		aux++;
+	}
+	str[aux] = '\0';
+	return (str);
+}
+
+char	*get_word(char *line, int i)
+{
+	char	*str;
+	int		ancla;
+
+	i++;
 	ancla = i;
 	while (line[i])
 	{
 		if ((line[i] == ' ' || line[i] == '\t') || line[i + 1] == '\0')
 		{
-			str = (char*)malloc(sizeof(char) * (i - ancla + 1));
-			if (!str)
-			{
-				return (NULL);
-			}
-			while(ancla < i)
-			{
-				str[aux] = line[ancla];
-				ancla++;
-				aux ++;
-			}
-			if (line[i + 1] == '\0')
-			{
-				str[aux] = line[ancla];
-				aux++;
-			}
-			str[aux] = '\0';
+			str = condicion_get_word(str, line, ancla, i);
 			return (str);
 		}
 		i++;
@@ -383,13 +427,47 @@ char	*get_word(char *line, int i)
 	return (NULL);
 }
 
+
+char *sustituir_dollar_new_word(char *line, int i, char *new_word, int len)
+{
+	char	*new_line1;
+	char	*new_line2;
+
+	new_line1 = ft_substr(line, 0, i);
+	new_line1 = ft_strjoin(new_line1, new_word);
+	while (line[i] && (line[i] != ' ' && line[i] != '\t'))
+		i++;
+	if (line[i])
+	{
+		new_line2 = ft_substr(line, i, len - 1);
+		new_line1 = ft_strjoin(new_line1, new_line2);
+	}
+	line = ft_strdup(new_line1);
+	return (line);
+
+}
+char *sustituir_dollar_not_new_word(char *line, int i, int len)
+{
+	char	*new_line1;
+	char	*new_line2;
+
+	new_line1 = ft_substr(line, 0, i);
+	while (line[i] && (line[i] != ' ' && line[i] != '\t'))
+		i++;
+	if (line[i])
+	{
+		new_line2 = ft_substr(line, i, len - 1);
+		new_line1 = ft_strjoin(new_line1, new_line2);
+	}
+	line = ft_strdup(new_line1);
+	return (line);
+}
+
 void	sustituir_dollar(char *line, t_list *env_list)
 {
-	int i;
-	char *new_word;
-	char *new_line1;
-	char *new_line2;
-	int len;
+	int		i;
+	char	*new_word;
+	int		len;
 
 	i = 0;
 	len = 0;
@@ -402,43 +480,21 @@ void	sustituir_dollar(char *line, t_list *env_list)
 			new_word = get_word(line, i);
 			new_word = get_env_value(env_list, new_word);
 			if (new_word)
-			{
-				new_line1 = ft_substr(line, 0, i);
-				new_line1 = ft_strjoin(new_line1, new_word);
-				while(line[i] && (line[i] != ' ' && line[i] != '\t'))
-					i++;
-				if (line[i])
-				{
-					new_line2 = ft_substr(line, i, len - 1);
-					new_line1 = ft_strjoin(new_line1, new_line2);
-				}
-				line = ft_strdup(new_line1);
-			}
+				line = sustituir_dollar_new_word(line, i, new_word, len);
 			else
-			{
-				new_line1 = ft_substr(line, 0, i);
-				while(line[i] && (line[i] != ' ' && line[i] != '\t'))
-					i++;
-				if (line[i])
-				{
-					new_line2 = ft_substr(line, i, len - 1);
-					new_line1 = ft_strjoin(new_line1, new_line2);
-				}
-				line = ft_strdup(new_line1);
-			}
+				line = sustituir_dollar_not_new_word(line, i, len);
 		}
 		i++;
 		new_word = NULL;
 	}
-	printf("%s", new_line1);
+	//printf("%s", new_line1); //Quitar seguramente
 }
 
 int		hay_palabra_before(char *word_before, char *archivo)
 {
-	int i;
+	int		i;
 
 	i = 0;
-
 	while (word_before[i])
 	{
 		if (word_before[i] == archivo[i])
@@ -451,12 +507,12 @@ int		hay_palabra_before(char *word_before, char *archivo)
 
 int		hay_palabra_after(char *word_after, char *archivo)
 {
-	int i;
-	int size;
+	int		i;
+	int		size;
 
 	i = 0;
 	size = 0;
-	while(archivo[size])
+	while (archivo[size])
 		size++;
 	while (word_after[i])
 		i++;
@@ -475,9 +531,9 @@ int		hay_palabra_after(char *word_after, char *archivo)
 
 char	*get_word_after(char *line, int i)
 {
-	char *str;
-	int ancla;
-	int aux;
+	char	*str;
+	int		ancla;
+	int		aux;
 
 	aux = 0;
 	ancla = i;
@@ -486,7 +542,7 @@ char	*get_word_after(char *line, int i)
 	if ((i - 1)== ancla)
 		return (NULL);
 	i--;
-	str = (char*)malloc(sizeof(char) * (i - ancla + 1));
+	str = (char *)malloc(sizeof(char) * (i - ancla + 1));
 	if (!str)
 		return (NULL);
 	ancla++;
@@ -502,9 +558,9 @@ char	*get_word_after(char *line, int i)
 
 char	*get_word_before(char *line, int i)
 {
-	char *str;
-	int ancla;
-	int aux;
+	char	*str;
+	int		ancla;
+	int		aux;
 
 	aux = 0;
 	ancla = i; 
@@ -512,9 +568,9 @@ char	*get_word_before(char *line, int i)
 		ancla--;
 	if (ancla != 0)
 		ancla++;
-	if (i == ancla)    
+	if (i == ancla)
 		return (NULL);
-	str = (char*)malloc(sizeof(char) * (i - ancla + 1));
+	str = (char *)malloc(sizeof(char) * (i - ancla + 1));
 	if (!str)
 		return (NULL);
 	while (ancla < i)
@@ -529,10 +585,9 @@ char	*get_word_before(char *line, int i)
 
 int		check_size(char *word_before, char *word_after, char *name)
 {
-	int size;
-	int size_word_a;
-	int size_word_b;
-
+	int		size;
+	int		size_word_a;
+	int		size_word_b;
 
 	size = 0;
 	size_word_a = 0;
@@ -552,29 +607,12 @@ int		check_size(char *word_before, char *word_after, char *name)
 	}
 }
 
-char *case_director(char *word_after, char *word_before, char *name, struct dirent *ent)
+char *case_director_word_before(char *str, char *word_before, char *name)
 {
-	int j;
-	int i;
-	int size;
-	char *str;
-
-	size = 0;
-	i = 0;
-	while (name[size])
-		size++;
-	j = 0;
-	size --;
-	while (word_after[j])
-		j++;
-	j--;
-	j--;
 	if (word_before)
 	{
 		if (word_before[0] == '/')
-		{
 			str = ft_strjoin("/", name);
-		}
 		else
 		{
 			str = getcwd(str, 100);
@@ -582,180 +620,73 @@ char *case_director(char *word_after, char *word_before, char *name, struct dire
 			str = ft_strjoin(str, name);
 		}
 		if (access(str, R_OK) != 0)
-			return NULL;
+			return (NULL);
+		return (str);
 	}
+	return (NULL);
+}
+
+int increment_size_case_director(char *word)
+{
+	int		i;
+
+	i = 0;
+	while (word[i])
+		i++;
+	i--;
+	return (i);
+}
+
+int	condicion_case_director(char *word_after, char *name, int size, int j)
+{
+	while (word_after[j] && size >= 0)
+	{
+		if (word_after[j] != name[size])
+			return (0);
+		j--;
+		size--;
+	}
+	return (1);
+}
+
+char *case_director(char *word_after, char *word_before, char *name, struct dirent *ent)
+{
+	int		j;
+	int		size;
+	char	*str;
+
+	size = increment_size_case_director(name);
+	j = increment_size_case_director(word_after);
+	j--;
+	str = case_director_word_before(str, word_before, name);
 	if (ent->d_type == 4 || ent->d_type == 10)
 	{
-		while (word_after[j] && size >= i)
-		{
-			if (word_after[j] != name[size])
-				return (NULL);
-			j--;
-			size--;
-		}
+		if (condicion_case_director(word_after, name, size, j) == 0)
+			return (NULL);
 	}
 	else
 		return (NULL);
-	if (name[0] == '.' && (name[1] == '.' || name[1] == '\0')) //comprobar el .git
+	if (name[0] == '.' && (name[1] == '.' || name[1] == '\0'))
 		return (NULL);
 	name = ft_strjoin(name, "/");
 	return (name);
 }
 
-	/*if (aparece_al_principio(ent->d_name, word_before) == 0)
-		return (NULL);*/
-	
-int	aparece_al_principio_version_aster(char *ruta, char *word_before)
+//Arreglar
+char *case_word_before_after(char *word_before, char *word_after, struct dirent *ent, char *str)
 {
-	int i;
-	int j;
+	int		i;
+	int		j;
+	int		size;
+	int		aux;
 
 	i = 0;
-	j = 0;
-	if (word_before[j] == '/')
-		j++;
-	// Falta añadir a str el
-	while(word_before[j] && ruta[i])
-	{
-		if (ruta[i] == word_before[j])
-		{
-			i++;
-			j++;
-		}
-		else
-			return (0);
-	}
-	return (1);
-}
-
-int aparece_al_final_version_aster(char *ruta, char *line, int ancla)
-{
-	int i;
-	int j;
-
-	i = 0;
-	j = 0;
-	while (ruta[i])
-		i++;
-	i--;
-	while (line[j])
-		j++;
-	j--;
-	if (line[j] == '/')
-		return (-1);
-	while(j >= 0)
-	{
-		if (ruta[i] == line[j])
-		{
-			i--;
-			j--;
-		}
-		else
-			return (0);
-	}
-	i++;
-	if (ancla > i)
-		return (0);
-	return (1);
-}
-
-char *case_word_bef_aft(char *word_before, char *word_after, structr dirent *ent, char *str)
-{
-	int size_word_a;
-	int size_word_b;
-	int size;
-
-	size_word_a = 0;
-	size_word_b = 0;
-	size = 0;
-	if (case_word_before(word_before, ent->d_name, ent) != NULL && case_word_after(word_after, ent->d_name, ent) != NULL)
-	{
-		while (word_before[size_word_b])
-			size_word_b++;
-		while (word_after[size_word_a])
-			size_word_a++;
-		while (ent->d_name[size])
-			size++;
-		if ((size - size_word_a - size_word_b) < 0)
-			return (NULL);
-		else
-		{
-			return (case_word_after(word_after, ent->d_name, ent));
-		}
-	}
-	else
-	{
-		return (NULL);
-	}
-}
-
-
-
-
-char *case_word_before_after(char *word_before, char *word_after, structr dirent *ent, char *str)
-{
-	int ancla;
-	int j;
-	int size;
-	int aux;
-	
-	ancla = 0;
 	j = 0;
 	aux = 0;
 	size = check_size(word_before, word_after, ent->d_name);
 	if (size == 0)
 		return (NULL);
-	str = (char*)malloc(sizeof(char)*(2));
-	if (!str)
-		return (NULL);
-	if (aparece_al_principio_version_aster(ent->d_name, word_before) == 0)
-		return (NULL);
-	while (word_before[ancla])
-		ancla++;
-	ancla--;
-
-
-
-
-	while (word_after[j])
-		j++;
-	j--;
-	if (word_after[j] == '/')
-	{
-		str = ft_strjoin(str, case_director(word_after, word_before, ent->d_name, ent));
-		if (ent->d_name[i] == '.')
-			return (NULL);
-		return (str);
-	}
-	//while (word_after[j] && size >= i)
-	while (j >= 0 && size > i)
-	{
-		if (word_after[j] != ent->d_name[size])
-			return (NULL);
-		j--;
-		size--;
-	}
-	size++;
-	if (size <= i)
-		return (NULL);
-	if (ent->d_name[i] == '.')
-		return (NULL);
-	// hacer caso srcs*s ---> te tiene que dar mal
-	str = ft_strjoin(str, ent->d_name);
-	return (str);
-}
-
-char *case_word_before(char *word_before, char *name, struct dirent *ent)
-{
-	int i;
-	int aux;
-	char *str;
-	int ancla;
-
-	i = 0;
-	aux = 0;
-	str = NULL;
-	str = (char*)malloc(sizeof(char)*(2));
+	str = (char *) malloc(sizeof(char) * (2));
 	if (!str)
 		return (NULL);
 	if (word_before[aux] == '/')
@@ -763,6 +694,61 @@ char *case_word_before(char *word_before, char *name, struct dirent *ent)
 		aux++;
 		str[0] = '/';
 	}
+	while (word_before[aux])
+	{
+		if (word_before[aux] != ent->d_name[i])
+			return (NULL);
+		i++;
+		aux++;
+	}
+	while (word_after[j])
+		j++;
+	j--;
+	if (word_after[j] == '/')
+	{
+		str = ft_strjoin(str,
+				case_director(word_after, word_before, ent->d_name, ent));
+		if (ent->d_name[i] == '.')
+			return (NULL);
+		return (str);
+	}
+	while (word_after[j] && size >= i)
+	{
+		if (word_after[j] != ent->d_name[size])
+			return (NULL);
+		j--;
+		size--;
+	}
+	if (ent->d_name[i] == '.')
+		return (NULL);
+	// hacer caso srcs*s ---> te tiene que dar mal
+	str = ft_strjoin(str, ent->d_name);
+	return (str);
+}
+
+int condicion_case_word_before(char *word_before, int aux, char *str)
+{
+	if (word_before[aux] == '/')
+	{
+		aux++;
+		str[0] = '/';
+	}
+	return (aux);
+}
+
+char *case_word_before(char *word_before, char *name, struct dirent *ent)
+{
+	int		i;
+	int		aux;
+	char	*str;
+	int		ancla;
+
+	i = 0;
+	aux = 0;
+	str = (char *)malloc(sizeof(char) * (2));
+	if (!str)
+		return (NULL);
+	aux = condicion_case_word_before(word_before, aux, str);
 	while (word_before[aux])
 	{
 		if (word_before[aux] != name[i])
@@ -776,32 +762,28 @@ char *case_word_before(char *word_before, char *name, struct dirent *ent)
 	return (str);
 }
 
+char *condicion_case_word_after(char *name, char *word_after, int j,
+	struct dirent *ent)
+{
+	name = case_director(word_after, NULL, name, ent);
+	if (name)
+	{
+		if (name[0] == '.')
+			return (NULL);
+	}
+	return (name);
+}
+
 char *case_word_after(char *word_after, char *name, struct dirent *ent)
 {
-	int j;
-	int size;
-	int i;
+	int		j;
+	int		size;
 
-	size = 0;
-	i = 0;
-	while (name[size])
-		size++;
-	j = 0;
-	size --;
-	while (word_after[j])
-		j++;
-	j--;
+	size = increment_size_case_director(name);
+	j = increment_size_case_director(word_after);
 	if (word_after[j] == '/')
-	{
-		name = case_director(word_after, NULL, name, ent);
-		if (name)
-		{
-			if (name[0] == '.')
-				return (NULL);
-		}
-		return (name);
-	}
-	while (word_after[j] && size >= i)
+		return (condicion_case_word_after(name, word_after, j, ent));
+	while (word_after[j] && size >= 0)
 	{
 		if (word_after[j] != name[size])
 			return (NULL);
@@ -815,8 +797,8 @@ char *case_word_after(char *word_after, char *name, struct dirent *ent)
 
 int	check_num_asteriscos(char *str, int i)
 {
-	int num_ast;
-	int aux;
+	int		num_ast;
+	int		aux;
 
 	aux = i;
 	num_ast = 0;
@@ -831,19 +813,16 @@ int	check_num_asteriscos(char *str, int i)
 
 void change_wildcards(char *word_before, char *word_after, char *line, int i)
 {
-	DIR *dir;
-	struct dirent *ent;
-	char *str;
+	DIR				*dir;
+	struct dirent	*ent;
+	char			*str;
 
-	if (!word_before)
+	if (!word_before || word_before[0] != '/')
 		dir = opendir(".");
-	else if (word_before[0] == '/')
-		dir = opendir("/");
 	else
-		dir = opendir(".");
-	str = NULL;
+		dir = opendir("/");
 	if (dir == NULL)
-		printf("no se puede abrir directorio");
+		return ;
 	while ((ent = readdir(dir)) != NULL)
 	{
 		if (word_before && word_after)
@@ -852,11 +831,6 @@ void change_wildcards(char *word_before, char *word_after, char *line, int i)
 			str = case_word_before(word_before, ent->d_name, ent);
 		else if (word_after)
 			str = case_word_after(word_after, ent->d_name, ent);
-		else
-		{
-			if (ent->d_name[0] != '.')
-				printf("%s ",ent->d_name);
-		}
 		if (str)
 			printf("%s ", str);
 	}
@@ -865,19 +839,20 @@ void change_wildcards(char *word_before, char *word_after, char *line, int i)
 
 char	*get_word_after_m(char *line, int i)
 {
-	char *str;
-	int ancla;
-	int aux;
+	char	*str;
+	int		ancla;
+	int		aux;
 
 	aux = 0;
 	ancla = i;
 	i++;
-	while (line[i] != ' ' && line[i] != '\t' && line[i] != '\0' && line[i] != '*')
+	while (line[i] != ' ' && line[i] != '\t'
+		&& line[i] != '\0' && line[i] != '*')
 		i++;
 	if ((i - 1)== ancla)
 		return (NULL);
 	i--;
-	str = (char*)malloc(sizeof(char) * (i - ancla + 1));
+	str = (char *)malloc(sizeof(char) * (i - ancla + 1));
 	if (!str)
 		return (NULL);
 	ancla++;
@@ -891,99 +866,43 @@ char	*get_word_after_m(char *line, int i)
 	return (str);
 }
 
-char *genera_pos_str(int niv)
-{
-	int i;
-	char *tmp=malloc(niv*2+1);
-	for (i=0; i<niv*2; ++i)
-		tmp[i]=' ';
-	tmp[niv*2]='\0';
-	return tmp;
-}
-
-unsigned cuenta_archivos(char *ruta, int niv)
-{
-	DIR *dir;
-	struct dirent *ent;
-	unsigned numfiles; 
-	char *nombrecompleto;
-	char *posstr;
-
-	numfiles = 0;
-	dir = opendir (ruta);
-	if (dir == NULL)
-	{
-		printf("Vacio el directorio");
-		return (0);
-	}
-	while ((ent = readdir (dir)) != NULL)
-	{
-		if ( (strcmp(ent->d_name, ".")!=0) && (strcmp(ent->d_name, "..")!=0) )
-		{
-			//nombrecompleto=get_full_name(ruta, ent);
-			if (ent->d_type!= 4)
-			{
-				++numfiles;
-			}
-			else
-			{
-				posstr=genera_pos_str(niv);
-				printf("%sEntrando en: %s\n", posstr, nombrecompleto);
-				printf("%s%s . Total: %u archivos ", posstr, nombrecompleto, cuenta_archivos(nombrecompleto, niv+1));
-				printf("\n");
-				free(posstr);
-			}
-			free(nombrecompleto);
-		}
-    }
-	closedir (dir);
-	return numfiles;
-}
-
-
 int ft_strlen_matriz(char **line)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	while (line[i])
-	{
 		i++;
-	}
 	return (i);
 }
-
 char *get_name(char *ruta, struct dirent *ent)
 {
-	char *nombrecompleto;
-	int tmp;
+	char	*nombrecompleto;
+	int		tmp;
 
 	tmp = ft_strlen(ruta);
-	nombrecompleto = malloc(tmp+strlen(ent->d_name)+2);
-	if (ruta[tmp-1] == '/')
+	nombrecompleto = malloc(tmp + ft_strlen(ent->d_name) + 2);
+	if (ruta[tmp - 1] == '/')
 		nombrecompleto = ft_strjoin(ruta, ent->d_name);
 	else if (ruta[0] == '.')
-	{
 		nombrecompleto = ft_strdup(ent->d_name);
-	}
 	else
 	{
 		nombrecompleto = ft_strjoin(ruta, "/");
 		nombrecompleto = ft_strjoin(nombrecompleto, ent->d_name);
 	}
-	return nombrecompleto;
+	return (nombrecompleto);
 }
-
 int	aparece_al_principio(char *ruta, char *line)
 {
-	int i;
-	int j;
+	int	i;
+	int	j;
 
 	i = 0;
 	j = 0;
 	if (line[0] == '*')
 		return (1);
-	while(line[j] && ruta[i])
+	while (line[j] && ruta[i])
 	{
 		if (ruta[i] == line[j])
 		{
@@ -995,15 +914,14 @@ int	aparece_al_principio(char *ruta, char *line)
 	}
 	return (1);
 }
-
-
-
+//Arreglar
+condition_check_caract
 int aparece_en_medio_barra(struct dirent *ent, char *line)
 {
-	int i;
-	int j;
-	int ancla;
-	
+	int	i;
+	int	j;
+	int	ancla;
+
 	i = 0;
 	j = 0;
 	while (ent->d_name[i])
@@ -1032,22 +950,19 @@ int aparece_en_medio_barra(struct dirent *ent, char *line)
 			return (1);
 	}
 	return (0);
-	
 }
 
 int aparece_en_medio(struct dirent *ent, char *line)
 {
-	int i;
-	int j;
+	int		i;
+	int		j;
 
 	i = 0;
 	j = 0;
 	while (line[j])
 	{
 		if (line[j] == '/')
-		{
 			return (aparece_en_medio_barra(ent, line));
-		}
 		j++;
 	}
 	j = 0;
@@ -1066,12 +981,12 @@ int aparece_en_medio(struct dirent *ent, char *line)
 			i++;
 		}
 	}
-	return(0);
+	return (0);
 }
 
-int 	hay_barra(char *line)
+int	hay_barra(char *line)
 {
-	int i;
+	int		i;
 
 	i = 0;
 	while (line[i])
@@ -1083,10 +998,11 @@ int 	hay_barra(char *line)
 	return (0);
 }
 
+//Arreglar
 int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 {
-	int i;
-	int ancla;
+	int		i;
+	int		ancla;
 
 	i = 0;
 	while (ruta[cont] && line[i])
@@ -1095,55 +1011,38 @@ int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 			cont++;
 		else
 		{
-		//	printf("contador before se joda todo %d\n", cont);
 			ancla = cont + 1;
 			while (line[i] == ruta[cont] && line[i] && ruta[cont])
 			{
 				i++;
 				cont++;
-	//			printf("linea : %c\n", line[i]);
-	//			printf("ruta : %c\n", ruta[cont]);
 			}
-			//printf("I despues del bucle %d\n", i);
-	//		printf("cont despues del bucle %d\n", cont);
 			if (line[i] != '\0' && ruta[cont] != '\0')
 			{
 				i = 0;
 				cont = ancla;
 			}
 			else if (ruta[cont] == '\0' && line[i] != '\0')
-			{
 				return (0);
-			}
 			else if (ruta[cont] != '\0' && line[i] == '\0')
-			{
-	//			printf("CONTADOR = %d, LINEA = %d\n", cont, i);
 				return (cont);
-			}
-			else // Si los dos llegan al final y se han encontrado returneas -1.
-			{
+			else
 				return (-1);
-			}
 		}
 	}
 	return (0);
 }
-int aparece_al_final(char *ruta, char *line, int ancla, struct dirent *ent)
-{
-	int i;
-	int j;
 
-	i = 0;
-	j = 0;
-	while (ruta[i])
-		i++;
-	i--;
-	while (line[j])
-		j++;
-	j--;
+int		aparece_al_final(char *ruta, char *line, int ancla, struct dirent *ent)
+{
+	int		i;
+	int		j;
+
+	i = increment_size_case_director(ruta);
+	j = increment_size_case_director(line);
 	if (line[j] == '/')
 		return (-1);
-	while(j >= 0)
+	while (j >= 0)
 	{
 		if (ruta[i] == line[j])
 		{
@@ -1151,51 +1050,47 @@ int aparece_al_final(char *ruta, char *line, int ancla, struct dirent *ent)
 			j--;
 		}
 		else
-		{
 			return (0);
-		}
 	}
 	i++;
 	if (ancla > i)
 		return (0);
-	printf("Returnea 1");
 	return (1);
 }
 
-// Funcion si no hay barras, es decir no hay que acceder a directorios.
+//Arreglar
 void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_list **list
 {
-	DIR *dir;
-	struct dirent *ent;
-	char *nombrecompleto;
-	int cont;
-	int i;
+	DIR		*dir;
+	struct	dirent *ent;
+	char	*nombrecompleto;
+	int		cont;
+	int		i;
 
 	cont = 0;
 	i = 0;
 	dir = opendir(ruta);
 	if (dir == NULL)
-	{
 		return ;
-	}
+	ent = readdir (dir);
 	while ((ent = readdir (dir)) != NULL)
 	{
 		cont = 0;
-		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
+		if ((ft_strcmp(ent->d_name, ".") != 0)
+			&& (ft_strcmp(ent->d_name, "..") != 0))
 		{
-			//Posible while (pos != ft_strlen_matriz - 1)
 			if (aparece_al_principio(ent->d_name, line[0]) == 1)
 			{
 				pos++;
 				if (line[0][0] != '*')
 				{
-					while(line[0][cont])
+					while (line[0][cont])
 						cont++;
 				}
 				while (pos != (ft_strlen_matriz(line) - 1) && cont != -42)
 				{
-					cont = funcion_hay_algo_enmedio(ent->d_name, line[pos], cont);
-					//printf("Contador en sin barra: %d\n", cont);
+					cont = funcion_hay_algo_enmedio(ent->d_name,
+							line[pos], cont);
 					pos++;
 					if (cont == -1)
 					{
@@ -1241,6 +1136,7 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 	}
 }
 
+//Arreglar
 void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir t_list **list
 {
 	DIR *dir;
@@ -1248,7 +1144,6 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 	char *nombrecompleto;
 	int cont;
 	int i;
-
 	cont = 0;
 	i = 0;
 	dir = opendir(ruta);
@@ -1318,6 +1213,7 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 	}
 }
 
+//Arreglar
 void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 {
 	DIR *dir;
@@ -1327,9 +1223,7 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 	i = 0;
 	dir = opendir(ruta);
 	if (dir == NULL)
-	{
 		return ;
-	}
 	while ((ent = readdir (dir)) != NULL)
 	{
 		if ((ft_strcmp(ent->d_name, ".") != 0) && (ft_strcmp(ent->d_name, "..") != 0))
@@ -1354,7 +1248,6 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 int	cont_barras(char *line, int i)
 {
 	int barras;
-
 	barras = 0;
 	while (line[i] != ' ' && line[i])
 	{
@@ -1365,7 +1258,7 @@ int	cont_barras(char *line, int i)
 	return (barras);
 }
 
-// si dejo * es que esta mal y si no lo sustituyo
+//Arreglar
 char 	*gestion_wildcards(char *line)
 {
 	int i;
@@ -1373,7 +1266,6 @@ char 	*gestion_wildcards(char *line)
 	char *word_before;
 	char *word_after;
 	char **aster;
-
 	i = 0;
 	while(line[i])
 	{
@@ -1381,8 +1273,11 @@ char 	*gestion_wildcards(char *line)
 		{
 			if (check_num_asteriscos(line, i) == 1)
 			{
+				printf("\nENTRA AQUI\n");
 				word_after = get_word_after(line, i);
 				word_before = get_word_before(line, i);
+				printf("word before = %s\n", word_before);
+				printf("word after = %s\n", word_after);
 				change_wildcards(word_before, word_after, line, i);
 			}
 			else
@@ -1398,14 +1293,20 @@ char 	*gestion_wildcards(char *line)
 					if (aster[0][0] == '/')
 						funcion_wildcards_sinbarra("/", aster, 0);
 					else
+					{
 						funcion_wildcards_sinbarra(".", aster, 0);
+					}
 				}
 				else
 				{
 					if (aster[0][0] == '/')
+					{
 						funcion_wildcards_conbarra("/", aster, cont_barras(line, ancla));
+					}
 					else
+					{
 						funcion_wildcards_conbarra(".", aster, cont_barras(line, ancla));
+					}
 				}
 			}
 		}
@@ -1413,7 +1314,6 @@ char 	*gestion_wildcards(char *line)
 	}
 	return (0);
 }
-
 int main(int argc, char **argv, char **env)
 {
 	t_parser *parser;
@@ -1426,7 +1326,6 @@ int main(int argc, char **argv, char **env)
 	t_list *list;
 	i = 0;
 	len = 0;
-
 	if (argc == 1)
 		return (0);
 	set_env_list(&env_lst, env);
@@ -1441,7 +1340,8 @@ int main(int argc, char **argv, char **env)
 	// Mirar el $?
 	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
 	//printf("%s\n", line);
-	gestion_wildcards("*c hahahsg");
+	gestion_wildcards("*/ hahahsg");
+	//gestion_wildcards("s*r*/* hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
 	//printf("%s", env_aux);
@@ -1459,7 +1359,6 @@ int main(int argc, char **argv, char **env)
 	t_list *list;
 	i = 0;
 	len = 0;
-
 	env_list = 
 	if (argc < 0)
 		return (1);
@@ -1495,12 +1394,7 @@ int main(int argc, char **argv, char **env)
 	free(line);
 	free(parser);
 	return (0);
-
 }
-
-
-
-
 			if (hay_palabra_before(word_before, ent->d_name))
 			{
 				if (!str)
@@ -1515,9 +1409,6 @@ int main(int argc, char **argv, char **env)
 					str = ft_strjoin(str, " ");
 					printf("%s ", str);
 				}*/
-
-
-
 /*			if (pos == 0)
 			{
 				if (aparece_al_principio(ent, line[0]) == 1)
@@ -1551,23 +1442,17 @@ int main(int argc, char **argv, char **env)
 						solucion = aparece_en_medio(ent, line[pos]);
 						printf("Aparece en medio: %d y es %s\n", solucion, ent->d_name);
 					}
-
 				if (ent->d_type == 4)
 				{
 					nombrecompleto = get_name(ruta, ent);
 					funcion_wildcards(nombrecompleto, line, pos, 0);
 				}
-
-
-
-
 void	funcion_wildcards(char *ruta, char **line, int pos, int barra)// añadir t_list **list
 {
 	DIR *dir;
 	struct dirent *ent;
 	char *nombrecompleto;
 	int cont;
-
 	cont = 0;
 	dir = opendir(ruta);
 	if (dir == NULL)
@@ -1609,8 +1494,6 @@ void	funcion_wildcards(char *ruta, char **line, int pos, int barra)// añadir t_
 			{
 		
 				//funcion_wildcards(nombrecompleto, &line[pos], list);
-
-
 			//si se cumple que existe:
 			//ft_list_add(list, new_nodo(nombrecompleto))
 		}
