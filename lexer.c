@@ -1,11 +1,17 @@
 #include "libft/libft.h"
 #include "includes/minishell.h"
 #include <stdio.h>
+
 typedef struct s_parser
 {
 	char 	*line; // Esta linea va a contener 
 	t_list *lexer; // Esta seria la tabla que contiene todos los datos del lexer // Numero de comandos
 }				t_parser;
+
+void funcion_wildcards_conbarra(char *ruta, char **line, int num_barras);
+
+
+
 // SI *S* busca todas las palabras que contengan S
 char	**make_array_wildcard(char *s)
 {
@@ -487,7 +493,7 @@ void	sustituir_dollar(char *line, t_list *env_list)
 		i++;
 		new_word = NULL;
 	}
-	//printf("%s", new_line1); //Quitar seguramente
+	//printf("%s", line); //Quitar seguramente
 }
 
 int		hay_palabra_before(char *word_before, char *archivo)
@@ -669,6 +675,7 @@ char *case_director(char *word_after, char *word_before, char *name, struct dire
 	if (name[0] == '.' && (name[1] == '.' || name[1] == '\0'))
 		return (NULL);
 	name = ft_strjoin(name, "/");
+	printf("Pasa por case_director\n");
 	return (name);
 }
 
@@ -722,9 +729,8 @@ char *case_word_before_after(char *word_before, char *word_after,
 	}
 	if (ent->d_name[i] == '.')
 		return (NULL);
-	// hacer caso srcs*s ---> te tiene que dar mal
 	str = ft_strjoin(str, ent->d_name);
-	return (str);
+	return (str); //CASO SRCS*S
 }
 
 int condicion_case_word_before(char *word_before, int aux, char *str)
@@ -1006,8 +1012,15 @@ int	hay_barra(char *line)
 	}
 	return (0);
 }
-
-//Arreglar (No se como)
+int incrementar_hay_algo_enmedio(char *line, char *ruta, int *i, int cont)
+{
+	while (line[*i] == ruta[cont] && line[*i] && ruta[cont])
+	{
+		cont++;
+		(*i)++;
+	}
+	return (cont);
+}
 int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 {
 	int		i;
@@ -1021,8 +1034,7 @@ int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 		else
 		{
 			ancla = cont + 1;
-			while (line[i] == ruta[cont] && line[i++] && ruta[cont++])
-				cont++;
+			cont = incrementar_hay_algo_enmedio(line, ruta, &i, cont);
 			if (line[i] != '\0' && ruta[cont] != '\0')
 			{
 				i = 0;
@@ -1032,8 +1044,7 @@ int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 				return (0);
 			else if (ruta[cont] != '\0' && line[i] == '\0')
 				return (cont);
-			else
-				return (-1);
+			return (-1);
 		}
 	}
 	return (0);
@@ -1140,6 +1151,7 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 				}
 			}
 		}
+		ent = readdir (dir);
 		pos = 0;
 	}
 }
@@ -1217,19 +1229,29 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 				}
 			}
 		}
+		ent = readdir (dir);
 		pos = 0;
 	}
 }
 
-//Arreglar
+char *funcion_num_barras_mayor(char *ruta, char **line, struct dirent *ent, int num_barras)
+{
+	char	*nombrecompleto;
+
+	if (ent->d_type == 4)
+	{
+		nombrecompleto = get_name(ruta, ent);
+		funcion_wildcards_conbarra(nombrecompleto, line, num_barras - 1);
+	}
+	return (nombrecompleto);
+}
+
 void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 {
 	DIR				*dir;
 	struct dirent	*ent;
 	char			*nombrecompleto;
-	int				i;
 
-	i = 0;
 	dir = opendir(ruta);
 	if (dir == NULL)
 		return ;
@@ -1240,21 +1262,15 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 			&& (ft_strcmp(ent->d_name, "..") != 0))
 		{
 			if (num_barras > 0)
-			{
-				if (ent->d_type == 4)
-				{
-					nombrecompleto = get_name(ruta, ent);
-					funcion_wildcards_conbarra(nombrecompleto,
-						line, num_barras - 1);
-				}
-			}
+				nombrecompleto = funcion_num_barras_mayor(ruta,
+						line, ent, num_barras);
 			else
 			{
 				funcion_wildcards_sinbarra_dps(ruta, line, 0);
 				return ;
-				//Aqui supuestamente tenemos la nueva ruta con todas las barras. por ejemplo: Minishell/srcs.
 			}
 		}
+		ent = readdir (dir);
 	}
 }
 int	cont_barras(char *line, int i)
@@ -1354,9 +1370,9 @@ int main(int argc, char **argv, char **env)
 	if (!line)
 		return 0;
 	// Mirar el $?
-	//sustituir_dollar("hola me llamo $USER $LESS y tuu $US ps $USER\", env_lst);
+	//sustituir_dollar("hola me llamo $USER $PWD y tuu $US ps $USER", env_lst); FUNCIONA
 	//printf("%s\n", line);
-	gestion_wildcards("*/ hahahsg");
+	gestion_wildcards("srcs*s hahahsg");
 	//gestion_wildcards("s*r*/* hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
