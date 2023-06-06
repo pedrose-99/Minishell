@@ -1,7 +1,7 @@
 #include "../../includes/minishell.h" 
 #include "../../libft/libft.h"
 
-char	*ft_strjoin_variadic(int n, ...)
+char	*aux_join_variadic(int n, ...)
 {
 	va_list	lst;
 	int		cont;
@@ -12,7 +12,7 @@ char	*ft_strjoin_variadic(int n, ...)
 	join = va_arg(lst, char *);
 	while (cont < n)
 	{
-		join = ft_strjoin(join, va_arg(lst, char *)); //cambiar por aux_join para liberar char* alocados con malloc,
+		join = aux_join(join, va_arg(lst, char *)); //cambiar por aux_join para liberar char* alocados con malloc,
 													// hacer otra función para ese caso, y esta solo para pasar str literals
 													//o usar strdup para que haga una copia del str con malloc
 		cont++;
@@ -37,7 +37,7 @@ void	cd(char *path, t_list	**env_lst)
 		/*path_to_move = aux_join(path_to_move, "/"); //hacer una función variadica para que haga el join de múltiples strings en una sola función
 		path_to_move = aux_join(path_to_move, path);
 		*/
-		ft_strjoin_malloc_variadic(2, path_to_move, "/", path);
+		aux_join_malloc_variadic(2, path_to_move, "/", path);
 	}
 	if (chdir(path_to_move) == 0)
 	{
@@ -51,6 +51,6 @@ void	cd(char *path, t_list	**env_lst)
 
 int	main(void)
 {
-	ft_strjoin_variadic(3, "hola ", "buenas ", "jeje ", "   .");
+	aux_join_variadic(3, "hola ", "buenas ", "jeje ", "   .");
 	return (0);
 }

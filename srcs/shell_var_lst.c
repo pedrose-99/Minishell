@@ -22,7 +22,7 @@ void	shell_vars_file(t_list *env_lst)
 	cont = 0;
 	while (path_matrix[cont])
 	{
-		path_cmd = ft_strjoin(path_matrix[cont], "/set");
+		path_cmd = aux_join(path_matrix[cont], "/set");
 		printf("Path del comando a probar: %s\n", path_cmd);
 		if (access(path_cmd, X_OK) == 0)
 		{
