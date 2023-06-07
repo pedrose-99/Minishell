@@ -669,8 +669,9 @@ char *case_director(char *word_after, char *word_before, char *name, struct dire
 		return (NULL);
 	if (name[0] == '.' && (name[1] == '.' || name[1] == '\0'))
 		return (NULL);
-	name = aux_join(name, "/");
-	return (name);
+	str= ft_strjoin(str, name);
+	str = aux_join(str, "/");
+	return (str);
 }
 
 char *check_malloc(char *str, int size)
@@ -701,12 +702,12 @@ char *guardar_barra(char *word_before, int *aux, int *i, struct dirent *ent)
 	{
 		if (word_before[*aux] != ent->d_name[*i])
 		{
-			free(str);
 			return (NULL);
 		}
 		(*i)++;
 		(*aux)++;
 	}
+	str = aux_join(str, ent->d_name);
 	return (str);
 }
 
@@ -729,40 +730,59 @@ int condicion_word_after_size(char *word_after, int *j, struct dirent *ent, int 
 }
 
 //Arreglar
-char *case_word_before_after(char *word_before, char *word_after,
+void	case_word_before_after(char *word_before, char *word_after,
 	struct dirent *ent, char *str)
 {
 	int		i;
 	int		j;
 	int		size;
 	int		aux;
+	char	*director;
 
+	director = NULL;
+	//system("leaks -q a.out");
 	size = check_size(word_before, word_after, ent->d_name);
 	if (size == 0)
-		return (NULL);
-	str = guardar_barra(word_before, &aux, &i, ent);
+		return ;
+	str = guardar_barra(word_before, &aux, &i, ent); //genera un leak
+	str = aux_join(str, str);
+	printf("STR === %s \n", str);
 	if (!str)
-		return (NULL);
+	{
+		printf("SALE POR AQUI XQ %s es \n", str);
+		str = NULL;
+		return ;
+	}
 	j = incrementar_case_bef_aft(word_after, j);
 	if (word_after[j] == '/')
 	{
-		str = aux_join(str,
-				case_director(word_after, word_before, ent->d_name, ent));
+		director = case_director(word_after, word_before, ent->d_name, ent);
+		str = ft_strjoin(str, director);
 		if (ent->d_name[i] == '.')
-			return (NULL);
-		return (str);
+		{
+			str = NULL;
+			return ;
+		}
+		return ;
 	}
 	while (word_after[j] && size >= i)
 	{
 		if (word_after[j] != ent->d_name[size])
-			return (0);
+		{
+			str = NULL;
+			return ;
+		}
 		j--;
 		size--;
 	}
 	if (ent->d_name[i] == '.')
-		return (NULL);
-	str = aux_join(str, ent->d_name);
-	return (str); //CASO SRCS*S
+	{
+		str = NULL;
+		return ;
+	}
+	str = ft_strjoin(str, ent->d_name);
+	//system("leaks -q a.out");
+	//CASO SRCS*S
 }
 
 int condicion_case_word_before(char *word_before, int aux, char *str)
@@ -782,16 +802,17 @@ char *case_word_before(char *word_before, char *name, struct dirent *ent)
 	char	*str;
 	int		ancla;
 
-	i = 0;
-	aux = 0;
+	str = NULL;
 	str = (char *)malloc(sizeof(char) * (2));
 	if (!str)
 		return (NULL);
+	i = 0;
+	aux = 0;
 	aux = condicion_case_word_before(word_before, aux, str);
 	while (word_before[aux])
 	{
 		if (word_before[aux] != name[i])
-		{	
+		{
 			free(str);
 			return (NULL);
 		}
@@ -799,32 +820,39 @@ char *case_word_before(char *word_before, char *name, struct dirent *ent)
 		aux++;
 	}
 	if (name[i] == '.' || (name[0] == '.' && name[1] == '\0'))
+	{
+		free(str);
 		return (NULL);
+	}
 	str = aux_join(str, name);
-	return (name);
+	return (str);
 }
 
 char *condicion_case_word_after(char *name, char *word_after, int j,
 	struct dirent *ent)
 {
-	name = case_director(word_after, NULL, name, ent);
-	if (name)
+	char	*str;
+
+	str = NULL;
+	str = case_director(word_after, NULL, name, ent);
+	if (str)
 	{
-		if (name[0] == '.')
+		if (str[0] == '.')
 			return (NULL);
 	}
-	return (name);
+	return (str);
 }
 
 char *case_word_after(char *word_after, char *name, struct dirent *ent)
 {
 	int		j;
 	int		size;
-
 	size = increment_size_case_director(name);
 	j = increment_size_case_director(word_after);
 	if (word_after[j] == '/')
+	{
 		return (condicion_case_word_after(name, word_after, j, ent));
+	}
 	while (word_after[j] && size >= 0)
 	{
 		if (word_after[j] != name[size])
@@ -856,11 +884,12 @@ int	check_num_asteriscos(char *str, int i)
 	return (num_ast);
 }
 
-void change_wildcards(char *word_before, char *word_after, char *line, int i)
+void change_wildcards(char *word_before, char *word_after) //Añadir *line para sustituir e i para la posición
 {
 	DIR				*dir;
 	struct dirent	*ent;
 	char			*str;
+	struct dirent	*aux;
 
 	if (!word_before || word_before[0] != '/')
 		dir = opendir(".");
@@ -868,17 +897,28 @@ void change_wildcards(char *word_before, char *word_after, char *line, int i)
 		dir = opendir("/");
 	if (dir == NULL)
 		return ;
-	while ((ent = readdir(dir)) != NULL)
+	ent = readdir(dir);
+	aux = ent;
+	while (ent != NULL)
 	{
 		if (word_before && word_after)
-			str = case_word_before_after(word_before, word_after, ent, str);
+			case_word_before_after(word_before, word_after, ent, str);
 		else if (word_before)
 			str = case_word_before(word_before, ent->d_name, ent);
 		else if (word_after)
 			str = case_word_after(word_after, ent->d_name, ent);
-		if (str)
-			printf("%s ", str);
+		if (str != NULL)
+		{
+			//printf("%s ", str);
+			printf("SE METE AQUI:\n");
+			//free(str);
+			//system("leaks -q a.out");
+		}
+		ent = readdir(dir);
 	}
+	free(aux);
+	free(dir);
+	//system("leaks -q a.out");
 	printf("\n");
 }
 
@@ -1343,9 +1383,11 @@ char 	*gestion_wildcards(char *line)
 			{
 				word_after = get_word_after(line, i);
 				word_before = get_word_before(line, i);
-				change_wildcards(word_before, word_after, line, i);
-				free(word_before);
+				//system("leaks -q a.out");
+				change_wildcards(word_before, word_after); //Me salen 2
+				//system("leaks -q a.out");
 				free(word_after);
+				free(word_before);
 			}
 			else
 			{
@@ -1402,15 +1444,16 @@ int main(int argc, char **argv, char **env)
 	//print_env_lst(env_lst);
 	while (argv[1][len])
 		len++;
-	parser = (t_parser*)malloc(sizeof(t_parser));
-	init_parser(parser);
+	//parser = (t_parser*)malloc(sizeof(t_parser)); // DA un leak.
+	//init_parser(parser);
 	line = (char*)malloc(sizeof(char)*(len + 1));
 	if (!line)
 		return 0;
 	// Mirar el $?
-	//sustituir_dollar("hola me llamo $USER $PWD y tuu $US ps $USER", env_lst); FUNCIONA
+	//sustituir_dollar("hola me llamo $USER $PWD y tuu $US ps $USER", env_lst); //FUNCIONA
 	//printf("%s\n", line);
-	gestion_wildcards("*s hahahsg"); ///
+	//system("leaks -q a.out");
+	gestion_wildcards("s*s hahahsg"); ///
 	system("leaks -q a.out");
 	//gestion_wildcards("s*r*/* hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
@@ -1462,8 +1505,6 @@ int main(int argc, char **argv, char **env)
 		printf("%s\n", list->content);
 		list = list->next;
 	}
-	free(line);
-	free(parser);
 	return (0);
 }
 			if (hay_palabra_before(word_before, ent->d_name))
