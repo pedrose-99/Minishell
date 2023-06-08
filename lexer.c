@@ -1408,10 +1408,14 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 			&& (ft_strcmp(ent->d_name, "..") != 0))
 		{
 			if (num_barras > 0)
+			{
 				nombrecompleto = funcion_num_barras_mayor(ruta,
 						line, ent, num_barras);
+				printf("El nombre siendo barras > 0 es: %s\n", nombrecompleto);
+			}
 			else
 			{
+				printf("Nombre completo: %s\n", nombrecompleto);
 				funcion_wildcards_sinbarra_dps(ruta, line, 0);
 				free(aux);
 				free(dir);
@@ -1523,8 +1527,8 @@ int main(int argc, char **argv, char **env)
 	//sustituir_dollar("hola me llamo $USER $PWD y tuu $US ps $USER", env_lst); //FUNCIONA
 	//printf("%s\n", line);
 	//system("leaks -q a.out");
-	gestion_wildcards("*/* hahahsg"); ///
-	system("leaks -q a.out");
+	gestion_wildcards("*/*/* hahahsg"); ///
+	//system("leaks -q a.out");
 	//gestion_wildcards("s*r*/* hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
