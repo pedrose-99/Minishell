@@ -1028,14 +1028,15 @@ char *get_name(char *ruta, struct dirent *ent)
 	int		tmp;
 
 	tmp = ft_strlen(ruta);
-	nombrecompleto = malloc(tmp + ft_strlen(ent->d_name) + 2);
 	if (ruta[tmp - 1] == '/')
-		nombrecompleto = aux_join(ruta, ent->d_name);
+		nombrecompleto = ft_strjoin(ruta, ent->d_name);
 	else if (ruta[0] == '.')
+	{
 		nombrecompleto = ft_strdup(ent->d_name);
+	}
 	else
 	{
-		nombrecompleto = aux_join(ruta, "/");
+		nombrecompleto = ft_strjoin(ruta, "/");
 		nombrecompleto = aux_join(nombrecompleto, ent->d_name);
 	}
 	return (nombrecompleto);
@@ -1167,6 +1168,7 @@ int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 	int		ancla;
 
 	i = 0;
+
 	while (ruta[cont] && line[i])
 	{
 		if (ruta[cont] != line[i])
@@ -1184,7 +1186,8 @@ int		funcion_hay_algo_enmedio(char *ruta, char *line, int cont)
 				return (0);
 			else if (ruta[cont] != '\0' && line[i] == '\0')
 				return (cont);
-			return (-1);
+			else
+				return (-1); //Seguramente cambiar x 0, es decir, quitar el de abajo???????
 		}
 	}
 	return (0);
@@ -1248,6 +1251,7 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 				}
 				while (pos != (ft_strlen_matriz(line) - 1) && cont != -42)
 				{
+					//REvisar funcion hay algo en medio.
 					cont = funcion_hay_algo_enmedio(ent->d_name,
 							line[pos], cont);
 					pos++;
@@ -1257,7 +1261,7 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 						{
 							if (line[pos][0] == '*')
 							{
-								printf("%s\n", ent->d_name);
+								//printf("%s\n", ent->d_name);
 								cont = -42;
 							}
 							else
@@ -1308,6 +1312,7 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 	char			*nombrecompleto;
 	int				cont;
 	int				i;
+	struct dirent	*aux;
 
 	cont = 0;
 	i = 0;
@@ -1317,6 +1322,7 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 		return ;
 	}
 	ent = readdir (dir);
+	aux = ent;
 	while (ent != NULL)
 	{
 		cont = 0;
@@ -1343,7 +1349,6 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 						{
 							if (line[pos][0] == '*')
 							{
-								//printf("%s\n", ent->d_name);
 								cont = -42;
 							}
 							else
@@ -1351,12 +1356,16 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 						}
 					}
 					if (cont == 0)
+					{
 						cont = -42;
+					}
 				}
 				if (cont != -42)
 				{
 					if (line[pos][0] == '*')
+					{
 						printf("%s\n", nombrecompleto);
+					}
 					else
 					{
 						if (aparece_al_final(nombrecompleto, line[pos],
@@ -1371,11 +1380,14 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 						}
 					}
 				}
+				free(nombrecompleto);
 			}
 		}
 		ent = readdir (dir);
 		pos = 0;
 	}
+	free(dir);
+	free(aux);
 }
 
 char *funcion_num_barras_mayor(char *ruta, char **line, struct dirent *ent, int num_barras)
@@ -1397,6 +1409,7 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 	char			*nombrecompleto;
 	struct dirent	*aux;
 
+	nombrecompleto = NULL;
 	dir = opendir(ruta);
 	if (dir == NULL)
 		return ;
@@ -1409,21 +1422,25 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 		{
 			if (num_barras > 0)
 			{
-				nombrecompleto = funcion_num_barras_mayor(ruta,
-						line, ent, num_barras);
-				printf("El nombre siendo barras > 0 es: %s\n", nombrecompleto);
+				if (ent->d_type == 4)
+				{
+					nombrecompleto = get_name(ruta, ent);
+					funcion_wildcards_conbarra(nombrecompleto, line, num_barras - 1);
+					//free(nombrecompleto);
+				}
 			}
 			else
 			{
-				printf("Nombre completo: %s\n", nombrecompleto);
 				funcion_wildcards_sinbarra_dps(ruta, line, 0);
-				free(aux);
 				free(dir);
+				free(aux);
 				return ;
 			}
 		}
 		ent = readdir (dir);
 	}
+	free(dir);
+	free(aux);
 }
 int	cont_barras(char *line, int i)
 {
@@ -1485,7 +1502,7 @@ char 	*gestion_wildcards(char *line)
 					if (aster[0][0] == '/')
 					{
 						funcion_wildcards_conbarra("/", aster,
-							cont_barras(line, ancla));
+							cont_barras(line, ancla)-1);
 					}
 					else
 					{
@@ -1527,8 +1544,8 @@ int main(int argc, char **argv, char **env)
 	//sustituir_dollar("hola me llamo $USER $PWD y tuu $US ps $USER", env_lst); //FUNCIONA
 	//printf("%s\n", line);
 	//system("leaks -q a.out");
-	gestion_wildcards("*/*/* hahahsg"); ///
-	//system("leaks -q a.out");
+	gestion_wildcards("*s*s*s*s hahahsg"); ///
+	system("leaks -q a.out");
 	//gestion_wildcards("s*r*/* hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
 	//env_aux = get_env_var("USER", env_lst);
