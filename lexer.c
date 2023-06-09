@@ -1306,6 +1306,10 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 }
 
 //Arreglar
+//Dividirlo en posible barra al final. Si al final es una barra y NO hay barra en medio hay que havcer como si fuese uno normal.
+// Posible solución:
+//1. En esta misma funcion si el utlimo es barra recorres line. Si hay mas barras lo haces como ahora si no coges solo la ruta y compruebas si aparece al final
+//2. Si al final hay una barra y no hay mas anteriormente llamar directamente a funcion_wildcards_sinbarra añadiendole la condicion final de la que tenemos aqui
 void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir t_list **list
 {
 	DIR				*dir;
@@ -1434,7 +1438,10 @@ void	funcion_wildcards_conbarra(char *ruta, char **line, int num_barras)
 			}
 			else
 			{
-				funcion_wildcards_sinbarra_dps(ruta, line, 0);
+				if (check_pos_barras(ruta, line) == 0)
+					funcion_wildcards_sinbarra_dps(ruta, line, 0);
+				else
+					funcion_wildcards_sinbarra(ruta, line, 0);
 				free(dir);
 				free(aux);
 				return ;
