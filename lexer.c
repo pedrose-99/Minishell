@@ -1269,6 +1269,7 @@ void	funcion_wildcards_sinbarra(char *ruta, char **line, int pos)// añadir t_li
 								cont = -42;
 							}
 						}
+						cont = -42;
 					}
 					if (cont == 0)
 					{
@@ -1329,7 +1330,7 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 		if ((ft_strcmp(ent->d_name, ".") != 0)
 			&& (ft_strcmp(ent->d_name, "..") != 0))
 		{
-			nombrecompleto = get_name(ruta, ent);
+			nombrecompleto = get_name(ruta, ent); //Condicion de si hay una barra al final o no
 			if (aparece_al_principio(nombrecompleto, line[0]) == 1)
 			{
 				pos++;
@@ -1354,11 +1355,13 @@ void	funcion_wildcards_sinbarra_dps(char *ruta, char **line, int pos)// añadir 
 							else
 								cont = -42;
 						}
+						cont = -42;
 					}
 					if (cont == 0)
 					{
 						cont = -42;
 					}
+					printf("Cuanto vale en %s %d \n",nombrecompleto, cont);
 				}
 				if (cont != -42)
 				{
@@ -1544,7 +1547,7 @@ int main(int argc, char **argv, char **env)
 	//sustituir_dollar("hola me llamo $USER $PWD y tuu $US ps $USER", env_lst); //FUNCIONA
 	//printf("%s\n", line);
 	//system("leaks -q a.out");
-	gestion_wildcards("*s*s*s*s hahahsg"); ///
+	gestion_wildcards("*s*/ hahahsg"); ///
 	system("leaks -q a.out");
 	//gestion_wildcards("s*r*/* hahahsg");
 	//funcion_wildcards("srcs/jjjd", "hola", 0);
